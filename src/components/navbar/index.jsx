@@ -28,12 +28,16 @@ export default function NavBar() {
             <Dropdown.Item href="#/about" eventKey="2">
               about
             </Dropdown.Item>
-            <Dropdown.Item href="#/resume" eventKey="3">
+            {/* <Dropdown.Item href="#/resume" eventKey="3"> */}
+            <Dropdown.Item
+              href="https://mettlerresume2023.tiiny.site/"
+              eventKey="3"
+            >
               resume
             </Dropdown.Item>
-            <Dropdown.Item href="#/projects" eventKey="4">
+            {/* <Dropdown.Item href="#/projects" eventKey="4">
               projects
-            </Dropdown.Item>
+            </Dropdown.Item> */}
             {/* <Dropdown.Item href="#/john" eventKey="4">
               john
             </Dropdown.Item> */}
