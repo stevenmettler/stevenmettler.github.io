@@ -1,0 +1,33 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Generate blog posts
+      run: node generate-posts.js
+
+    - name: Commit updated scripts.js
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add scripts.js
+        git commit -m "Update scripts.js with latest posts" || echo "No changes to commit"
+        git push
+
+    - name: Deploy to GitHub Pages
+      uses: actions/checkout@v3
+      with:
+        ref: main
