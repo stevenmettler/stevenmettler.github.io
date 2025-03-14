@@ -3,31 +3,52 @@ name: Build and Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # For committing scripts.js and posts/
+  pages: write      # For deploying to GitHub Pages
+  id-token: write   # For deployment verification
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: Generate blog posts
-      run: node generate-posts.js
+      - name: Generate blog posts
+        run: node generate-posts.js
 
-    - name: Commit updated scripts.js
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add scripts.js
-        git commit -m "Update scripts.js with latest posts" || echo "No changes to commit"
-        git push
+      - name: Commit generated files
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add scripts.js posts/*.html
+          git commit -m "Update scripts.js and posts" || echo "No changes to commit"
+          git push
+        continue-on-error: true
 
-    - name: Deploy to GitHub Pages
-      uses: actions/checkout@v3
-      with:
-        ref: main
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '.' # Includes index.html, scripts.js, and posts/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
