@@ -1,5 +1,5 @@
-name: Autoposter
-run-name: ${{ github.actor }} is posting a new blog post 🚀
+name: Updater
+run-name: ${{ github.actor }} is updating the website or posting a new blog post 🚀
 on: [push]
 jobs:
   Explore-GitHub-Actions:
