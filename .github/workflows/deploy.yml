@@ -20,6 +20,17 @@ jobs:
 
       - name: Generate blog posts
         run: node generate-posts.js
+
+      - name: Commit generated files
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add scripts.js posts/*.html
+          git status
+          git commit -m "Update scripts.js and posts" || echo "No changes to commit"
+          git push origin main
+        continue-on-error: true
+        
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       - name: Check out repository code
