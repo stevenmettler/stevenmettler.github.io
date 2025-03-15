@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # For committing scripts.js and posts/
-  pages: write      # For deploying to GitHub Pages
-  id-token: write   # For deployment verification
+  contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: "pages"
@@ -29,14 +29,24 @@ jobs:
         with:
           node-version: '18'
 
+      - name: List files before generation
+        run: ls -R || dir # Shows all files in the runner before running the script
+
       - name: Generate blog posts
         run: node generate-posts.js
+
+      - name: List files after generation
+        run: ls -R || dir # Confirms scripts.js and posts/ are present
+
+      - name: Show scripts.js content
+        run: cat scripts.js # Logs the generated scripts.js content
 
       - name: Commit generated files
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add scripts.js posts/*.html
+          git status # Shows what’s staged
           git commit -m "Update scripts.js and posts" || echo "No changes to commit"
           git push
         continue-on-error: true
@@ -47,7 +57,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: '.' # Includes index.html, scripts.js, and posts/
+          path: '.' # Includes all files in root
 
       - name: Deploy to GitHub Pages
         id: deployment
