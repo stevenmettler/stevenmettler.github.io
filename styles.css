@@ -1,3 +1,4 @@
+/* Previous styles remain unchanged */
 body {
     margin: 0;
     padding: 30px;
@@ -23,10 +24,30 @@ pre {
 }
 
 a {
-    color: #007BFF; /* Deeper blue */
+    color: #007BFF;
     text-decoration: none;
 }
 
 a:hover {
     text-decoration: underline;
+}
+
+/* Simplified Image Container Styles */
+.image-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 15px auto;
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.caption {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #4a5e6a;
 }
