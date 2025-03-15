@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Ensures full history for accurate git status
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -30,26 +32,29 @@ jobs:
           node-version: '18'
 
       - name: List files before generation
-        run: ls -R || dir # Shows all files in the runner before running the script
+        run: ls -R || dir
 
       - name: Generate blog posts
         run: node generate-posts.js
 
       - name: List files after generation
-        run: ls -R || dir # Confirms scripts.js and posts/ are present
+        run: ls -R || dir
 
       - name: Show scripts.js content
-        run: cat scripts.js # Logs the generated scripts.js content
+        run: cat scripts.js
 
       - name: Commit generated files
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add scripts.js posts/*.html
-          git status # Shows what’s staged
+          git status
           git commit -m "Update scripts.js and posts" || echo "No changes to commit"
-          git push
+          git push origin main
         continue-on-error: true
+
+      - name: Verify files before upload
+        run: ls -R || dir # Confirms files are still present before artifact upload
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
