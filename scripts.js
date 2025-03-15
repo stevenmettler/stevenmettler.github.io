@@ -5,6 +5,11 @@ const posts = [
     "file": "posts/2025-03-15-I-can-post.html"
   },
   {
+    "date": "2025-03-15",
+    "title": "devotionail",
+    "file": "posts/2025-03-15-devotionail.html"
+  },
+  {
     "date": "2025-03-14",
     "title": "a start",
     "file": "posts/2025-03-14-a-start.html"
