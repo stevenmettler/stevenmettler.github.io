@@ -1,5 +1,10 @@
 const posts = [
   {
+    "date": "2025-12-17",
+    "title": "holidays",
+    "file": "posts/2025-12-17-holidays.html"
+  },
+  {
     "date": "2025-03-24",
     "title": "json prettifier",
     "file": "posts/2025-03-24-json-prettifier.html"
