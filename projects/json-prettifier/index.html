@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSON Prettifier</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="input-section">
+        <h2>Input JSON</h2>
+        <textarea
+          id="input-json"
+          placeholder="Paste your JSON here..."
+        ></textarea>
+        <button id="format-btn">Format JSON</button>
+      </div>
+      <div class="output-section">
+        <h2>Formatted JSON</h2>
+        <pre id="output-json"></pre>
+        <button id="copy-btn">Copy</button>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

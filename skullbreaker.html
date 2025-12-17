@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Skull Avoidance Game - Three.js Art</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+      }
+      canvas {
+        display: block;
+      }
+      #score {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-family: Arial, sans-serif;
+        font-size: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="score">Score: 0</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+      // Scene setup
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Create skull group
+      const skull = new THREE.Group();
+      const headGeometry = new THREE.SphereGeometry(50, 32, 32);
+      const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      const head = new THREE.Mesh(headGeometry, headMaterial);
+      skull.add(head);
+
+      const eyeGeometry = new THREE.SphereGeometry(15, 32, 32);
+      const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+      const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      leftEye.position.set(-20, 10, 40);
+      skull.add(leftEye);
+
+      const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      rightEye.position.set(20, 10, 40);
+      skull.add(rightEye);
+
+      const noseGeometry = new THREE.ConeGeometry(10, 20, 32);
+      const noseMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+      const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+      nose.position.set(0, -10, 40);
+      nose.rotation.x = Math.PI;
+      skull.add(nose);
+
+      const jawGeometry = new THREE.BoxGeometry(60, 20, 20);
+      const jawMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      const jaw = new THREE.Mesh(jawGeometry, jawMaterial);
+      jaw.position.set(0, -40, 20);
+      skull.add(jaw);
+
+      scene.add(skull);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0x404040);
+      scene.add(ambientLight);
+
+      const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
+      pointLight.position.set(100, 100, 100);
+      scene.add(pointLight);
+
+      // Camera position
+      camera.position.set(0, 0, 300);
+      camera.lookAt(0, 0, 0);
+
+      // Mouse tracking
+      const mouse = new THREE.Vector2();
+
+      document.addEventListener("mousemove", (event) => {
+        mouse.x = event.clientX - window.innerWidth / 2;
+        mouse.y = -(event.clientY - window.innerHeight / 2);
+      });
+
+      // Game variables
+      let score = 0;
+      const scoreDisplay = document.getElementById("score");
+      let obstacles = [];
+      const squareGeometry = new THREE.BoxGeometry(30, 30, 30);
+      const rectangleGeometry = new THREE.BoxGeometry(
+        window.innerWidth / 4,
+        30,
+        30
+      ); // Exactly half page wide
+      const obstacleMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+
+      // Spawn obstacles
+      function spawnObstacle(isRectangle = false) {
+        const geometry = isRectangle ? rectangleGeometry : squareGeometry;
+        const obstacle = new THREE.Mesh(geometry, obstacleMaterial);
+        const topEdge = window.innerHeight / 2 + 50;
+        obstacle.position.set(
+          isRectangle ? 0 : (Math.random() - 0.5) * window.innerWidth, // Center rectangles, random x for squares
+          topEdge,
+          0
+        );
+        obstacle.userData = { lifetime: 300 }; // 5 seconds at 60fps
+        scene.add(obstacle);
+        obstacles.push(obstacle);
+      }
+
+      // Reset game
+      function resetGame() {
+        skull.position.set(0, 0, 0);
+        headMaterial.color.set(0xffffff);
+        jawMaterial.color.set(0xffffff);
+        score = 0;
+        obstacles.forEach((obstacle) => scene.remove(obstacle));
+        obstacles = [];
+      }
+
+      // Animation loop
+      let time = 0;
+      let lastSpawnTime = 0;
+      let lastRectangleTime = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+
+        time += 1 / 60; // Assuming 60fps
+        score += 1 / 60; // Points based on time
+        scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
+
+        // Follow mouse
+        const targetPos = new THREE.Vector3(mouse.x, mouse.y, 0);
+        skull.position.lerp(targetPos, 0.05);
+
+        // Spawn squares every 0.5 seconds
+        if (time - lastSpawnTime > 0.5) {
+          spawnObstacle(false);
+          lastSpawnTime = time;
+        }
+
+        // Spawn rectangle every 5 seconds (occasional)
+        if (time - lastRectangleTime > 5 && Math.random() < 0.1) {
+          // 10% chance after 5s
+          spawnObstacle(true);
+          lastRectangleTime = time;
+        }
+
+        // Update obstacles
+        obstacles = obstacles.filter((obstacle) => {
+          obstacle.userData.lifetime -= 1;
+          obstacle.position.y -= 2; // Fall downward
+
+          // Check collision with skull
+          const distance = skull.position.distanceTo(obstacle.position);
+          const isRectangle = obstacle.geometry === rectangleGeometry;
+          const collisionDistance = isRectangle ? 100 : 80; // Larger buffer for rectangles
+          if (distance < collisionDistance) {
+            resetGame();
+            return false;
+          }
+
+          // Remove if lifetime expires
+          if (obstacle.userData.lifetime <= 0) {
+            scene.remove(obstacle);
+            return false;
+          }
+          return true;
+        });
+
+        // Color change when close to mouse
+        const mouseDistance = skull.position.distanceTo(targetPos);
+        if (mouseDistance < 50) {
+          headMaterial.color.set(0xff0000);
+          jawMaterial.color.set(0xff0000);
+        } else {
+          headMaterial.color.set(0xffffff);
+          jawMaterial.color.set(0xffffff);
+        }
+
+        // Rotation animation
+        skull.rotation.y = Math.sin(time) * 0.2;
+        skull.rotation.x = Math.cos(time) * 0.1;
+
+        renderer.render(scene, camera);
+      }
+
+      // Handle window resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        rectangleGeometry.parameters.width = window.innerWidth / 2; // Update rectangle size
+      });
+
+      animate();
+    </script>
+  </body>
+</html>
