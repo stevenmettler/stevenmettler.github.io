@@ -60,7 +60,7 @@ function stipple(ctx: CanvasRenderingContext2D, a: Point, b: Point) {
   for (let s = 0; s <= steps; s++) {
     const px = a[0] + (dx * s) / steps;
     const py = a[1] + (dy * s) / steps;
-    ctx.fillRect(px - 0.5, py - 0.5, 1, 1);
+    ctx.fillRect(px - 0.75, py - 0.75, 1.5, 1.5);
   }
 }
 
@@ -101,12 +101,12 @@ export function SiteBackground() {
     function draw(t: number) {
       const color =
         getComputedStyle(document.documentElement)
-          .getPropertyValue("--muted")
-          .trim() || "#9a9385";
+          .getPropertyValue("--quiet")
+          .trim() || "#7a746a";
 
       ctx!.clearRect(0, 0, width, height);
       ctx!.fillStyle = color;
-      ctx!.globalAlpha = 0.22;
+      ctx!.globalAlpha = 0.45;
 
       const cols = Math.ceil(width / CELL) + 1;
       const rows = Math.ceil(height / CELL) + 1;
