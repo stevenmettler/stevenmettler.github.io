@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
 import { GitHubActivity } from "./github-activity";
-import { HeroBackground } from "./hero-background";
+import { SiteBackground } from "./site-background";
 import { getPublishedPosts } from "@/lib/posts";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export default async function Home() {
 
   return (
     <div className="sm-site">
+      <SiteBackground />
       <div className="sm-sheet">
         <nav className="sm-nav">
           <Link href="/">steven mettler</Link>
@@ -31,7 +32,6 @@ export default async function Home() {
         </nav>
 
         <header className="sm-hero">
-          <HeroBackground />
           <h1>Steven&nbsp;Mettler</h1>
           <p className="sm-subtitle">Senior&nbsp;Software&nbsp;Engineer</p>
           <p className="sm-quote">

@@ -10,7 +10,7 @@ type Particle = {
   r: number;
 };
 
-export function HeroBackground() {
+export function SiteBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export function HeroBackground() {
     }
 
     function initParticles() {
-      const count = Math.min(36, Math.max(12, Math.floor((width * height) / 14000)));
+      const count = Math.min(70, Math.max(20, Math.floor((width * height) / 9000)));
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -101,5 +101,5 @@ export function HeroBackground() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="sm-hero-canvas" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className="sm-site-canvas" aria-hidden="true" />;
 }
