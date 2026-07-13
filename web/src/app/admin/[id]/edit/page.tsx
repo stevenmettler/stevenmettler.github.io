@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPostById } from "@/lib/posts";
 import { deletePost, updatePost } from "../../actions";
+import { MarkdownEditor } from "../../markdown-editor";
 import styles from "../../admin.module.css";
 
 export default async function EditPostPage({
@@ -36,13 +37,8 @@ export default async function EditPostPage({
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="bodyMarkdown">Body (Markdown)</label>
-          <textarea
-            id="bodyMarkdown"
-            name="bodyMarkdown"
-            className={styles.textarea}
-            defaultValue={post.bodyMarkdown}
-          />
+          <label>Body (Markdown)</label>
+          <MarkdownEditor name="bodyMarkdown" defaultValue={post.bodyMarkdown} />
         </div>
 
         <label className={styles.checkboxRow}>

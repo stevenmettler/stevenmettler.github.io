@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createPost } from "../actions";
+import { MarkdownEditor } from "../markdown-editor";
 import styles from "../admin.module.css";
 
 export default function NewPostPage() {
@@ -22,12 +23,8 @@ export default function NewPostPage() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="bodyMarkdown">Body (Markdown)</label>
-          <textarea
-            id="bodyMarkdown"
-            name="bodyMarkdown"
-            className={styles.textarea}
-          />
+          <label>Body (Markdown)</label>
+          <MarkdownEditor name="bodyMarkdown" />
         </div>
 
         <label className={styles.checkboxRow}>
