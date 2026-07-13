@@ -11,7 +11,7 @@ const fragmentMono = Fragment_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "steven mettler ~ code",
+  title: "Steven Mettler",
 };
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem("sm-theme");if(t!=="light"&&t!=="dark")t="light";document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;
