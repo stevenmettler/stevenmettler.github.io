@@ -1,0 +1,43 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import { getPublishedPostBySlug } from "@/lib/posts";
+
+export const dynamic = "force-dynamic";
+
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const post = await getPublishedPostBySlug(slug);
+
+  if (!post) notFound();
+
+  return (
+    <div className="sm-site">
+      <div className="sm-sheet">
+        <nav className="sm-nav">
+          <Link href="/">steven mettler</Link>
+          <div className="sm-nav-links">
+            <Link href="/#blog">&larr; back</Link>
+          </div>
+        </nav>
+
+        <article className="sm-post">
+          <h1 className="sm-post-title">{post.title}</h1>
+          <p className="sm-post-date">{post.date.replaceAll("-", "·")}</p>
+          <div className="sm-post-body">
+            <ReactMarkdown>{post.bodyMarkdown}</ReactMarkdown>
+          </div>
+        </article>
+
+        <footer className="sm-footer">
+          <span>&copy; 2026 steven mettler</span>
+          <span>set in fragment mono</span>
+        </footer>
+      </div>
+    </div>
+  );
+}
