@@ -22,6 +22,13 @@
       "when": 1783913308675,
       "tag": "0002_lethal_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783958912150,
+      "tag": "0003_wise_stature",
+      "breakpoints": true
     }
   ]
 }

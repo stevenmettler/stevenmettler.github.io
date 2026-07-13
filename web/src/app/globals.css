@@ -93,8 +93,17 @@ a:hover {
 }
 
 .sm-hero {
+  position: relative;
   padding: clamp(56px, 12vw, 96px) clamp(20px, 6vw, 48px) clamp(52px, 11vw, 88px);
   border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.sm-hero-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .sm-hero h1 {
@@ -297,6 +306,54 @@ a:hover {
   height: auto;
   margin: 1.4em 0;
   border: 1px solid var(--line);
+}
+
+.sm-post-body pre {
+  margin: 1.4em 0;
+  padding: 16px;
+  overflow-x: auto;
+  background: var(--line-soft);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  line-height: 1.6;
+}
+
+.sm-post-body code {
+  font-family: "Fragment Mono", monospace;
+  font-size: 12px;
+}
+
+.sm-post-body :not(pre) > code {
+  padding: 2px 5px;
+  background: var(--line-soft);
+  border-radius: 2px;
+}
+
+.sm-post-body .hljs-comment,
+.sm-post-body .hljs-quote {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.sm-post-body .hljs-keyword,
+.sm-post-body .hljs-selector-tag,
+.sm-post-body .hljs-literal,
+.sm-post-body .hljs-built_in {
+  color: var(--accent);
+}
+
+.sm-post-body .hljs-string,
+.sm-post-body .hljs-attr,
+.sm-post-body .hljs-regexp {
+  color: var(--ink);
+}
+
+.sm-post-body .hljs-number,
+.sm-post-body .hljs-title,
+.sm-post-body .hljs-name,
+.sm-post-body .hljs-function,
+.sm-post-body .hljs-attribute {
+  color: var(--body);
 }
 
 .sm-reactions {

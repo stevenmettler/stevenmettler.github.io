@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 
@@ -11,6 +11,7 @@ export type PostSummary = {
 export type Post = PostSummary & {
   id: number;
   bodyMarkdown: string;
+  views: number;
 };
 
 function formatDate(date: Date): string {
@@ -48,6 +49,7 @@ export async function getPublishedPostsFull(): Promise<Post[]> {
     title: row.title,
     date: formatDate(row.createdAt),
     bodyMarkdown: row.bodyMarkdown,
+    views: row.views,
   }));
 }
 
@@ -67,7 +69,18 @@ export async function getPublishedPostBySlug(slug: string): Promise<Post | null>
     title: row.title,
     date: formatDate(row.createdAt),
     bodyMarkdown: row.bodyMarkdown,
+    views: row.views,
   };
+}
+
+export async function incrementPostViews(id: number): Promise<number> {
+  const rows = await db
+    .update(posts)
+    .set({ views: sql`${posts.views} + 1` })
+    .where(eq(posts.id, id))
+    .returning({ views: posts.views });
+
+  return rows[0]?.views ?? 0;
 }
 
 export type AdminPostSummary = {
