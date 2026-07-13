@@ -163,6 +163,35 @@ a:hover {
   color: var(--accent);
 }
 
+.sm-github-activity {
+  margin-top: 20px;
+}
+
+.sm-github-chart {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  padding: 12px;
+  background: #fafaf8;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.sm-github-events {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sm-github-events li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
 .sm-blog-content {
   padding: 26px clamp(20px, 6vw, 48px) 30px;
 }
@@ -268,4 +297,133 @@ a:hover {
   height: auto;
   margin: 1.4em 0;
   border: 1px solid var(--line);
+}
+
+.sm-reactions {
+  display: flex;
+  gap: 10px;
+  margin-top: clamp(28px, 6vw, 40px);
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.sm-reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+
+.sm-reaction-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sm-reaction-btn:disabled {
+  cursor: default;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.sm-guestbook-notice {
+  padding: 16px clamp(20px, 6vw, 48px);
+  color: var(--accent);
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sm-guestbook-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.sm-guestbook-form input,
+.sm-guestbook-form textarea {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 2px;
+}
+
+.sm-guestbook-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.sm-guestbook-form button {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 18px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background .15s, color .15s;
+}
+
+.sm-guestbook-form button:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.sm-guestbook-entry {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sm-guestbook-entry:last-child {
+  border-bottom: none;
+}
+
+.sm-guestbook-entry p {
+  margin: 0 0 6px;
+}
+
+.sm-guestbook-entry span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+::view-transition-old(.sm-fade-out) {
+  animation: 150ms ease-out both sm-fade-out-kf;
+}
+
+::view-transition-new(.sm-fade-in) {
+  animation: 200ms ease-in 60ms both sm-fade-in-kf;
+}
+
+@keyframes sm-fade-out-kf {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sm-fade-in-kf {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
 }

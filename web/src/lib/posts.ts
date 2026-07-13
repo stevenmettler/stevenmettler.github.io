@@ -9,6 +9,7 @@ export type PostSummary = {
 };
 
 export type Post = PostSummary & {
+  id: number;
   bodyMarkdown: string;
 };
 
@@ -34,6 +35,22 @@ export async function getPublishedPosts(): Promise<PostSummary[]> {
   }));
 }
 
+export async function getPublishedPostsFull(): Promise<Post[]> {
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.published, true))
+    .orderBy(desc(posts.createdAt));
+
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    date: formatDate(row.createdAt),
+    bodyMarkdown: row.bodyMarkdown,
+  }));
+}
+
 export async function getPublishedPostBySlug(slug: string): Promise<Post | null> {
   const rows = await db
     .select()
@@ -45,6 +62,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<Post | null>
   if (!row) return null;
 
   return {
+    id: row.id,
     slug: row.slug,
     title: row.title,
     date: formatDate(row.createdAt),

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { getPublishedPostBySlug } from "@/lib/posts";
+import { getReactionsForPost } from "@/lib/reactions";
+import { Reactions } from "./reactions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,8 @@ export default async function BlogPostPage({
   const post = await getPublishedPostBySlug(slug);
 
   if (!post) notFound();
+
+  const reactionCounts = await getReactionsForPost(post.id);
 
   return (
     <div className="sm-site">
@@ -31,6 +35,7 @@ export default async function BlogPostPage({
           <div className="sm-post-body">
             <ReactMarkdown>{post.bodyMarkdown}</ReactMarkdown>
           </div>
+          <Reactions postId={post.id} initialCounts={reactionCounts} />
         </article>
 
         <footer className="sm-footer">

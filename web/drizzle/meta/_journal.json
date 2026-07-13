@@ -8,6 +8,20 @@
       "when": 1783902537191,
       "tag": "0000_workable_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783912925026,
+      "tag": "0001_wet_fallen_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783913308675,
+      "tag": "0002_lethal_magneto",
+      "breakpoints": true
     }
   ]
 }

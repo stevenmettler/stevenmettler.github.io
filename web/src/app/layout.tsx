@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fragment_Mono } from "next/font/google";
 import Script from "next/script";
+import { ViewTransition } from "react";
 import "./globals.css";
 
 const fragmentMono = Fragment_Mono({
@@ -34,7 +35,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ViewTransition enter="sm-fade-in" exit="sm-fade-out">
+          {children}
+        </ViewTransition>
+      </body>
     </html>
   );
 }

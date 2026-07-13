@@ -14,7 +14,7 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-async function requireAdmin() {
+export async function requireAdmin() {
   const session = await auth();
   if (!session) throw new Error("Unauthorized");
 }

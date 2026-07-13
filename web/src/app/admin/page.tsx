@@ -14,6 +14,7 @@ export default async function AdminPage() {
         <h1>admin</h1>
         <div className={styles.actions}>
           <Link href="/admin/new">+ new post</Link>
+          <Link href="/admin/guestbook">guestbook</Link>
           <form action={signOutAction}>
             <button type="submit" className={styles.signOutBtn}>
               sign out

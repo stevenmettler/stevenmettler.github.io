@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
+import { GitHubActivity } from "./github-activity";
 import { getPublishedPosts } from "@/lib/posts";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,11 @@ export default async function Home() {
             <a href="#work">02 work</a>
             <a href="#blog">03 blog</a>
             <a href="#games">04 games</a>
-            <a href="#contact">05 contact</a>
+            <a href="#now">05 now</a>
+            <a href="#contact">06 contact</a>
+            <a href="/feed.xml" className="sm-nav-resume">
+              rss
+            </a>
             <a href="/MettlerResume2025.pdf" className="sm-nav-resume">
               resume
             </a>
@@ -63,6 +68,7 @@ export default async function Home() {
             <div className="sm-work-code">
               code: <a href="https://github.com/stevenmettler">github</a>
             </div>
+            <GitHubActivity />
           </div>
         </section>
 
@@ -96,9 +102,23 @@ export default async function Home() {
           </div>
         </section>
 
+        <section id="now" className="sm-section">
+          <div className="sm-section-label">
+            05
+            <br />
+            NOW
+          </div>
+          <div className="sm-section-content">
+            Just rebuilt this whole site &mdash; Next.js, Postgres,
+            GitHub-gated posting, and way too much fun with DNS along the way.
+            Deep in Georgia&nbsp;Tech&rsquo;s OMSCS coursework. At work,
+            building scalable systems at Capital&nbsp;One.
+          </div>
+        </section>
+
         <section id="contact" className="sm-section">
           <div className="sm-section-label sm-contact-label">
-            05
+            06
             <br />
             CONTACT
           </div>
@@ -117,6 +137,7 @@ export default async function Home() {
 
         <footer className="sm-footer">
           <span>&copy; 2026 steven mettler</span>
+          <Link href="/guestbook">guestbook</Link>
           <span>set in fragment mono</span>
         </footer>
       </div>
