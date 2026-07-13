@@ -36,4 +36,4 @@ const posts = [
   }
 ];
 const blogDiv = document.getElementById("blog-posts");
-blogDiv.innerHTML = posts.map(post => `<a href="${post.file}">${post.date} ~ ${post.title}</a>`).join("\n");
+blogDiv.innerHTML = posts.map(post => `<a href="${post.file}" class="blog-row"><span class="blog-row-title">${post.title}</span><span class="blog-row-date">${post.date.replace(/-/g, "\u00b7")}</span></a>`).join("\n");

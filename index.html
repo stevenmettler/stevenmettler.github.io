@@ -4,36 +4,127 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>steven mettler ~ code</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("sm-theme");
+          if (t !== "light" && t !== "dark") t = "light";
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body>
-    <div class="container">
-      <pre>
-Steven Mettler
-Senior Software Engineer
+  <body class="sm-home">
+    <div class="sm-site">
+      <div class="sm-sheet">
+        <nav class="sm-nav">
+          <a href="/">steven mettler</a>
+          <div class="sm-nav-links">
+            <a href="#about">01 about</a>
+            <a href="#work">02 work</a>
+            <a href="#blog">03 blog</a>
+            <a href="#games">04 games</a>
+            <a href="#contact">05 contact</a>
+            <a href="MettlerResume2025.pdf" class="sm-nav-resume">resume</a>
+            <button
+              id="theme-toggle"
+              class="sm-theme-toggle"
+              title="light / dark"
+            >
+              ☀ light
+            </button>
+          </div>
+        </nav>
 
-.about
-Building at Capital One. Pursuing Master’s in CS @ Georgia Tech. Penn State alum.
+        <header class="sm-hero">
+          <h1>Steven&nbsp;Mettler</h1>
+          <p class="sm-subtitle">Senior&nbsp;Software&nbsp;Engineer</p>
+          <p class="sm-quote">
+            &ldquo;The reward of a work is to have produced it; the reward of
+            effort is to have grown by it.&rdquo;&nbsp;&nbsp;&mdash;&nbsp;Antonin&nbsp;Sertillanges
+          </p>
+        </header>
 
-“The reward of a work is to have produced it; the reward of effort is to have grown by it.” - Antonin Sertillanges
+        <section id="about" class="sm-section">
+          <div class="sm-section-label">01<br />ABOUT</div>
+          <div class="sm-section-content">
+            Building at Capital One. Pursuing a Master&rsquo;s in CS at
+            Georgia&nbsp;Tech. Penn&nbsp;State alum.
+          </div>
+        </section>
 
-.work
-SWE @ Capital One. Crafting scalable things.
-code: <a href="https://github.com/stevenmettler">github</a>
+        <section id="work" class="sm-section">
+          <div class="sm-section-label">02<br />WORK</div>
+          <div class="sm-section-content">
+            <div class="sm-work-row">
+              <span>SWE&nbsp;@&nbsp;Capital&nbsp;One &mdash; crafting scalable things</span>
+              <span class="sm-work-years">2022&mdash;</span>
+            </div>
+            <div class="sm-work-code">
+              code: <a href="https://github.com/stevenmettler">github</a>
+            </div>
+          </div>
+        </section>
 
-.blog
-<div id="blog-posts"></div>
+        <section id="blog" class="sm-section">
+          <div class="sm-section-label">03<br />BLOG</div>
+          <div id="blog-posts" class="sm-blog-content"></div>
+        </section>
 
-.games
-<a href="skullbreaker.html">skullbreaker</a>
+        <section id="games" class="sm-section">
+          <div class="sm-section-label">04<br />GAMES</div>
+          <div class="sm-section-content sm-games-content">
+            <a href="skullbreaker.html">skullbreaker</a> &mdash; a small game
+            about breaking skulls
+          </div>
+        </section>
 
-.contact
-steven.e.mettler@gmail.com
+        <section id="contact" class="sm-section">
+          <div class="sm-section-label sm-contact-label">05<br />CONTACT</div>
+          <div class="sm-section-content sm-contact-content">
+            <a href="mailto:steven.e.mettler@gmail.com" class="sm-contact-email"
+              >steven.e.mettler@gmail.com</a
+            >
+            <a href="MettlerResume2025.pdf" class="sm-contact-resume"
+              >resume (.pdf) &darr;</a
+            >
+          </div>
+        </section>
 
-.resume
-<a href="MettlerResume2025.pdf">link (.pdf)</a>
-        </pre>
+        <footer class="sm-footer">
+          <span>&copy; 2026 steven mettler</span>
+          <span>set in fragment mono</span>
+        </footer>
+      </div>
     </div>
     <script src="scripts.js"></script>
+    <script>
+      (function () {
+        var btn = document.getElementById("theme-toggle");
+        function render() {
+          var isDark =
+            document.documentElement.getAttribute("data-theme") === "dark";
+          btn.textContent = isDark ? "☾ dark" : "☀ light";
+        }
+        render();
+        btn.addEventListener("click", function () {
+          var next =
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "light"
+              : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          try {
+            localStorage.setItem("sm-theme", next);
+          } catch (e) {}
+          render();
+        });
+      })();
+    </script>
   </body>
 </html>

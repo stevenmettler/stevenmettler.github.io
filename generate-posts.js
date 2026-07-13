@@ -14,7 +14,7 @@ const posts = fs.readdirSync(postsDir)
 
 const jsContent = `const posts = ${JSON.stringify(posts, null, 2)};\n` +
     `const blogDiv = document.getElementById("blog-posts");\n` +
-    `blogDiv.innerHTML = posts.map(post => \`<a href="\${post.file}">\${post.date} ~ \${post.title}</a>\`).join("\\n");`;
+    `blogDiv.innerHTML = posts.map(post => \`<a href="\${post.file}" class="blog-row"><span class="blog-row-title">\${post.title}</span><span class="blog-row-date">\${post.date.replace(/-/g, "\\u00b7")}</span></a>\`).join("\\n");`;
 
 fs.writeFileSync("scripts.js", jsContent);
 console.log("Generated scripts.js with", posts.length, "posts");

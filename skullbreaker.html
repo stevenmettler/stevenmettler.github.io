@@ -2,11 +2,16 @@
 <html>
   <head>
     <title>Skull Avoidance Game - Three.js Art</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <style>
       body {
         margin: 0;
         overflow: hidden;
         background: #000;
+        touch-action: none;
       }
       canvas {
         display: block;
@@ -81,13 +86,29 @@
       camera.position.set(0, 0, 300);
       camera.lookAt(0, 0, 0);
 
-      // Mouse tracking
-      const mouse = new THREE.Vector2();
+      // Input tracking (mouse or touch)
+      const target = new THREE.Vector2();
 
+      // Mouse input for desktop
       document.addEventListener("mousemove", (event) => {
-        mouse.x = event.clientX - window.innerWidth / 2;
-        mouse.y = -(event.clientY - window.innerHeight / 2);
+        target.x = event.clientX - window.innerWidth / 2;
+        target.y = -(event.clientY - window.innerHeight / 2);
+        event.preventDefault();
       });
+
+      // Touch input for mobile
+      document.addEventListener(
+        "touchmove",
+        (event) => {
+          if (event.touches.length > 0) {
+            const touch = event.touches[0];
+            target.x = touch.clientX - window.innerWidth / 2;
+            target.y = -(touch.clientY - window.innerHeight / 2);
+          }
+          event.preventDefault();
+        },
+        { passive: false }
+      );
 
       // Game variables
       let score = 0;
@@ -98,7 +119,7 @@
         window.innerWidth / 4,
         30,
         30
-      ); // Exactly half page wide
+      );
       const obstacleMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
 
       // Spawn obstacles
@@ -107,7 +128,7 @@
         const obstacle = new THREE.Mesh(geometry, obstacleMaterial);
         const topEdge = window.innerHeight / 2 + 50;
         obstacle.position.set(
-          isRectangle ? 0 : (Math.random() - 0.5) * window.innerWidth, // Center rectangles, random x for squares
+          isRectangle ? 0 : (Math.random() - 0.5) * window.innerWidth,
           topEdge,
           0
         );
@@ -137,8 +158,8 @@
         score += 1 / 60; // Points based on time
         scoreDisplay.textContent = `Score: ${Math.floor(score)}`;
 
-        // Follow mouse
-        const targetPos = new THREE.Vector3(mouse.x, mouse.y, 0);
+        // Follow target (mouse or touch)
+        const targetPos = new THREE.Vector3(target.x, target.y, 0);
         skull.position.lerp(targetPos, 0.05);
 
         // Spawn squares every 0.5 seconds
@@ -149,7 +170,6 @@
 
         // Spawn rectangle every 5 seconds (occasional)
         if (time - lastRectangleTime > 5 && Math.random() < 0.1) {
-          // 10% chance after 5s
           spawnObstacle(true);
           lastRectangleTime = time;
         }
@@ -162,7 +182,7 @@
           // Check collision with skull
           const distance = skull.position.distanceTo(obstacle.position);
           const isRectangle = obstacle.geometry === rectangleGeometry;
-          const collisionDistance = isRectangle ? 100 : 80; // Larger buffer for rectangles
+          const collisionDistance = isRectangle ? 100 : 80;
           if (distance < collisionDistance) {
             resetGame();
             return false;
@@ -176,9 +196,9 @@
           return true;
         });
 
-        // Color change when close to mouse
-        const mouseDistance = skull.position.distanceTo(targetPos);
-        if (mouseDistance < 50) {
+        // Color change when close to target
+        const targetDistance = skull.position.distanceTo(targetPos);
+        if (targetDistance < 50) {
           headMaterial.color.set(0xff0000);
           jawMaterial.color.set(0xff0000);
         } else {
