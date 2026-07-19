@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, type ReactNode } from "react";
+import { useActionState, useEffect, useRef, useState, Suspense, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { extractArticle, type ExtractState } from "./actions";
 import type { ArticleBlock } from "@/lib/extract-blocks";
 import styles from "./reader.module.css";
@@ -65,8 +66,22 @@ function renderBlocks(blocks: ArticleBlock[]): ReactNode[] {
   return nodes;
 }
 
-export default function ReaderPage() {
+function ReaderForm() {
   const [state, formAction, pending] = useActionState(extractArticle, initialState);
+  const searchParams = useSearchParams();
+  const sharedUrl = searchParams.get("url") ?? "";
+  const formRef = useRef<HTMLFormElement>(null);
+  const hasAutoSubmitted = useRef(false);
+  const [inputValue] = useState(sharedUrl);
+
+  // Lets a URL arrive via ?url=... (e.g. from an iOS Shortcut) and read
+  // immediately, without requiring a manual paste + tap.
+  useEffect(() => {
+    if (sharedUrl && !hasAutoSubmitted.current) {
+      hasAutoSubmitted.current = true;
+      formRef.current?.requestSubmit();
+    }
+  }, [sharedUrl]);
 
   return (
     <div className={styles.page}>
@@ -75,12 +90,13 @@ export default function ReaderPage() {
         Paste an article link to get back the text only — no images, no video.
       </p>
 
-      <form action={formAction} className={styles.form}>
+      <form ref={formRef} action={formAction} className={styles.form}>
         <input
           type="url"
           name="url"
           required
           placeholder="https://..."
+          defaultValue={inputValue}
           className={styles.urlInput}
           disabled={pending}
         />
@@ -99,5 +115,13 @@ export default function ReaderPage() {
         </article>
       )}
     </div>
+  );
+}
+
+export default function ReaderPage() {
+  return (
+    <Suspense fallback={<div className={styles.page}>Loading…</div>}>
+      <ReaderForm />
+    </Suspense>
   );
 }
