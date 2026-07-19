@@ -5,10 +5,11 @@ import { Readability } from "@mozilla/readability";
 import { auth } from "@/auth";
 import { isBlockedDomain } from "@/lib/blocked-domains";
 import { isDisallowedHost } from "@/lib/url-safety";
+import { extractBlocks, type ArticleBlock } from "@/lib/extract-blocks";
 
 export type ExtractState =
   | { status: "idle" }
-  | { status: "success"; title: string; byline: string | null; text: string }
+  | { status: "success"; title: string; byline: string | null; blocks: ArticleBlock[] }
   | { status: "error"; message: string };
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -127,11 +128,20 @@ export async function extractArticle(
       };
     }
 
+    const blocks = extractBlocks(article.content ?? "");
+
     return {
       status: "success",
       title: article.title ?? "",
       byline: article.byline ?? null,
-      text: article.textContent.trim(),
+      blocks:
+        blocks.length > 0
+          ? blocks
+          : article.textContent
+              .trim()
+              .split(/\n{2,}/)
+              .map((text) => ({ type: "paragraph" as const, text: text.trim() }))
+              .filter((block) => block.text),
     };
   } catch {
     return { status: "error", message: "Something went wrong reading that page." };
