@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>catacombs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #020402;
+    touch-action: none;
+  }
+  canvas { display: block; background: #020402; }
+
+  #hud {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #4caf50;
+    font-size: 16px;
+    line-height: 1.5;
+    text-shadow: 0 0 4px rgba(76, 175, 80, 0.6);
+    pointer-events: none;
+    white-space: pre-line;
+  }
+
+  #bestHud {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #7a6a1f;
+    font-size: 13px;
+    text-align: right;
+    text-shadow: 0 0 4px rgba(255, 213, 74, 0.4);
+    pointer-events: none;
+  }
+
+  #gameOver {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.88);
+    color: #4caf50;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    gap: 10px;
+    z-index: 10;
+    cursor: pointer;
+    padding: 20px;
+  }
+  #gameOver .go-title {
+    font-size: 28px;
+    letter-spacing: 4px;
+    color: #ff5f5f;
+    text-shadow: 0 0 8px rgba(255, 95, 95, 0.7);
+  }
+  #gameOver .go-hint { margin-top: 20px; opacity: 0.8; font-size: 14px; }
+  @keyframes pulseGlow {
+    0%, 100% { text-shadow: 0 0 8px rgba(255, 213, 74, 0.8); }
+    50% { text-shadow: 0 0 18px rgba(255, 213, 74, 1), 0 0 30px rgba(255, 213, 74, 0.6); }
+  }
+  #gameOver .go-newbest {
+    color: #ffd54a;
+    animation: pulseGlow 1.2s ease-in-out infinite;
+  }
+  #gameOver .go-best { opacity: 0.7; font-size: 13px; }
+
+  #dpad {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 4px;
+    z-index: 5;
+  }
+  #dpad button {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 20px;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #dpad button:active { background: rgba(76, 175, 80, 0.4); }
+  .dpad-up { grid-column: 2; grid-row: 1; }
+  .dpad-left { grid-column: 1; grid-row: 2; }
+  .dpad-right { grid-column: 3; grid-row: 2; }
+  .dpad-down { grid-column: 2; grid-row: 3; }
+
+  #abilities {
+    position: fixed;
+    bottom: 16px;
+    right: 186px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 5;
+  }
+  #abilities button {
+    width: 60px;
+    height: 40px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #abilities button:active { background: rgba(76, 175, 80, 0.4); }
+  #abilities button.ability-locked {
+    opacity: 0.35;
+    border-color: #2a3a2a;
+    color: #2a3a2a;
+  }
+
+  #toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translate(-50%, -10px);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: #ffd54a;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #ffd54a;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-shadow: 0 0 6px rgba(255, 213, 74, 0.7);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 8;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  #bossBanner {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 32px;
+    letter-spacing: 6px;
+    color: #ff5f5f;
+    text-shadow: 0 0 12px rgba(255, 95, 95, 0.9), 0 0 30px rgba(255, 95, 95, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index: 9;
+    text-align: center;
+  }
+  #bossBanner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"></div>
+<div id="bestHud"></div>
+<div id="dpad">
+  <button class="dpad-up" data-dx="0" data-dy="-1">&uarr;</button>
+  <button class="dpad-left" data-dx="-1" data-dy="0">&larr;</button>
+  <button class="dpad-right" data-dx="1" data-dy="0">&rarr;</button>
+  <button class="dpad-down" data-dx="0" data-dy="1">&darr;</button>
+</div>
+<div id="abilities">
+  <button id="btnFire" class="ability-locked" data-ability="fireball">FIRE</button>
+  <button id="btnDash" class="ability-locked" data-ability="dash">DASH</button>
+</div>
+<div id="toast"></div>
+<div id="bossBanner"></div>
+<div id="gameOver"></div>
+
+<script>
+(function () {
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var hudEl = document.getElementById('hud');
+  var bestHudEl = document.getElementById('bestHud');
+  var gameOverEl = document.getElementById('gameOver');
+  var dpadEl = document.getElementById('dpad');
+  var abilitiesEl = document.getElementById('abilities');
+  var btnFireEl = document.getElementById('btnFire');
+  var btnDashEl = document.getElementById('btnDash');
+  var toastEl = document.getElementById('toast');
+  var bossBannerEl = document.getElementById('bossBanner');
+  var BEST_KEY = 'catacombs_best_v1';
+
+  var TILE = 20;
+  var VISION_RADIUS = 6;
+  var MOVE_ANIM_MS = 130;
+  var ABILITY_COST = { fireball: 4, dash: 2 };
+
+  var COLOR_BG = '#020402';
+  var COLOR_PLAYER = '#eafbea';
+  var COLOR_ENEMY = '#ff5f5f';
+  var COLOR_WALL_LIT = '#59d15f';
+  var COLOR_WALL_DIM = '#1c3a1e';
+  var COLOR_FLOOR_LIT = '#2f8f34';
+  var COLOR_FLOOR_DIM = '#12240f';
+  var COLOR_STAIRS_LIT = '#ffd54a';
+  var COLOR_STAIRS_DIM = '#7a6a1f';
+
+  var MONSTER_TYPES = [
+    { glyph: 'g', name: 'goblin' },
+    { glyph: 'r', name: 'giant rat' },
+    { glyph: 'w', name: 'wraith' },
+    { glyph: 'o', name: 'orc brute' },
+    { glyph: 'b', name: 'cave bat' }
+  ];
+
+  var BOSS_TYPES = [
+    { glyph: 'B', name: 'Bone Lord', color: '#c77dff' },
+    { glyph: 'B', name: 'Crypt Warden', color: '#ff9f43' },
+    { glyph: 'B', name: 'Ashen Knight', color: '#ff5f5f' }
+  ];
+  var BOSS_FLOOR_INTERVAL = 3;
+
+  var ITEM_DEFS = {
+    potion: { glyph: '!', lit: '#ff6b81', dim: '#7a2530', weight: 5 },
+    sword:  { glyph: '/', lit: '#cfd8dc', dim: '#4a5559', weight: 4 },
+    shield: { glyph: '[', lit: '#9fd8ff', dim: '#2d4a5c', weight: 4 },
+    gold:   { glyph: '$', lit: '#fff176', dim: '#7a6b1f', weight: 6 },
+    tome:   { glyph: '?', lit: '#c77dff', dim: '#4a2d66', weight: 2 },
+    boots:  { glyph: '=', lit: '#7dd3ff', dim: '#1f4a52', weight: 2 }
+  };
+  var ITEM_TYPE_KEYS = Object.keys(ITEM_DEFS);
+
+  var FACING_DELTA = {
+    up: { dx: 0, dy: -1 },
+    down: { dx: 0, dy: 1 },
+    left: { dx: -1, dy: 0 },
+    right: { dx: 1, dy: 0 }
+  };
+
+  var state = null;
+  var _fxIdCounter = 0;
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function pickWeightedItemType() {
+    var total = 0, k;
+    for (k = 0; k < ITEM_TYPE_KEYS.length; k++) total += ITEM_DEFS[ITEM_TYPE_KEYS[k]].weight;
+    var r = Math.random() * total;
+    for (k = 0; k < ITEM_TYPE_KEYS.length; k++) {
+      var def = ITEM_DEFS[ITEM_TYPE_KEYS[k]];
+      if (r < def.weight) return ITEM_TYPE_KEYS[k];
+      r -= def.weight;
+    }
+    return ITEM_TYPE_KEYS[ITEM_TYPE_KEYS.length - 1];
+  }
+
+  function dungeonSize(floor) {
+    return {
+      W: Math.min(50 + floor * 2, 80),
+      H: Math.min(25 + floor, 40)
+    };
+  }
+
+  function enemyStatsForFloor(floor) {
+    return {
+      hp: 3 + Math.floor(floor * 1.5),
+      atk: 1 + Math.floor(floor / 2)
+    };
+  }
+
+  function isBossFloor(floorNum) { return floorNum % BOSS_FLOOR_INTERVAL === 0; }
+
+  function bossStatsForFloor(floorNum) {
+    var base = enemyStatsForFloor(floorNum);
+    return { hp: Math.round(base.hp * 4), atk: Math.round(base.atk * 1.8) + 1 };
+  }
+
+  function generateFloor(floorNum) {
+    var size = dungeonSize(floorNum);
+    var W = size.W, H = size.H;
+    var grid = new Uint8Array(W * H); // 0 = wall, 1 = floor, 2 = stairs
+
+    function localIdx(x, y) { return y * W + x; }
+    function carveRoom(r) {
+      for (var y = r.y; y < r.y + r.h; y++) {
+        for (var x = r.x; x < r.x + r.w; x++) {
+          grid[localIdx(x, y)] = 1;
+        }
+      }
+    }
+    function overlaps(a, b, pad) {
+      return !(a.x + a.w + pad <= b.x || b.x + b.w + pad <= a.x ||
+               a.y + a.h + pad <= b.y || b.y + b.h + pad <= a.y);
+    }
+    function carveH(x1, x2, y) {
+      var xs = Math.min(x1, x2), xe = Math.max(x1, x2);
+      for (var x = xs; x <= xe; x++) grid[localIdx(x, y)] = 1;
+    }
+    function carveV(y1, y2, x) {
+      var ys = Math.min(y1, y2), ye = Math.max(y1, y2);
+      for (var y = ys; y <= ye; y++) grid[localIdx(x, y)] = 1;
+    }
+    function center(r) {
+      return { x: Math.floor(r.x + r.w / 2), y: Math.floor(r.y + r.h / 2) };
+    }
+
+    var rooms = [];
+    var MIN_SIZE = 4, MAX_SIZE = 9;
+    var maxRooms = Math.min(8 + floorNum, 20);
+
+    for (var i = 0; i < maxRooms; i++) {
+      var w = randInt(MIN_SIZE, MAX_SIZE);
+      var h = randInt(MIN_SIZE, MAX_SIZE);
+      var maxX = Math.max(1, W - w - 2);
+      var maxY = Math.max(1, H - h - 2);
+      var x = randInt(1, maxX);
+      var y = randInt(1, maxY);
+      var newRoom = { x: x, y: y, w: w, h: h };
+      var collides = false;
+      for (var j = 0; j < rooms.length; j++) {
+        if (overlaps(rooms[j], newRoom, 1)) { collides = true; break; }
+      }
+      if (collides) continue;
+      carveRoom(newRoom);
+      if (rooms.length > 0) {
+        var prev = center(rooms[rooms.length - 1]);
+        var cur = center(newRoom);
+        if (Math.random() < 0.5) {
+          carveH(prev.x, cur.x, prev.y);
+          carveV(prev.y, cur.y, cur.x);
+        } else {
+          carveV(prev.y, cur.y, prev.x);
+          carveH(prev.x, cur.x, cur.y);
+        }
+      }
+      rooms.push(newRoom);
+    }
+
+    if (rooms.length === 0) {
+      var fw = Math.min(6, W - 2), fh = Math.min(6, H - 2);
+      var forced = { x: 1, y: 1, w: fw, h: fh };
+      carveRoom(forced);
+      rooms.push(forced);
+    }
+
+    var start = center(rooms[0]);
+    var stairs = center(rooms[rooms.length - 1]);
+    grid[localIdx(stairs.x, stairs.y)] = 2;
+
+    var enemies = [];
+    var count = Math.min(3 + floorNum, 12);
+    var stats = enemyStatsForFloor(floorNum);
+    var attempts = 0;
+    while (enemies.length < count && attempts < count * 20) {
+      attempts++;
+      var roomIndex = rooms.length > 1 ? randInt(1, rooms.length - 1) : 0;
+      var room = rooms[roomIndex];
+      var ex = randInt(room.x, room.x + room.w - 1);
+      var ey = randInt(room.y, room.y + room.h - 1);
+      if (ex === start.x && ey === start.y) continue;
+      if (ex === stairs.x && ey === stairs.y) continue;
+      var occupiedTile = false;
+      for (var k = 0; k < enemies.length; k++) {
+        if (enemies[k].x === ex && enemies[k].y === ey) { occupiedTile = true; break; }
+      }
+      if (occupiedTile) continue;
+      var type = MONSTER_TYPES[randInt(0, MONSTER_TYPES.length - 1)];
+      enemies.push({
+        x: ex, y: ey,
+        hp: stats.hp, maxHp: stats.hp, atk: stats.atk,
+        alive: true, glyph: type.glyph, name: type.name,
+        id: 'e' + (_fxIdCounter++)
+      });
+    }
+
+    if (isBossFloor(floorNum)) {
+      var bossType = BOSS_TYPES[randInt(0, BOSS_TYPES.length - 1)];
+      var bossStats = bossStatsForFloor(floorNum);
+      enemies.push({
+        x: stairs.x, y: stairs.y,
+        hp: bossStats.hp, maxHp: bossStats.hp, atk: bossStats.atk,
+        alive: true, glyph: bossType.glyph, name: bossType.name,
+        isBoss: true, bossColor: bossType.color, powerAttackCounter: 0,
+        id: 'e' + (_fxIdCounter++)
+      });
+    }
+
+    var items = [];
+    var itemCount = randInt(3, 5);
+    attempts = 0;
+    while (items.length < itemCount && attempts < itemCount * 20) {
+      attempts++;
+      var iRoom = rooms[randInt(0, rooms.length - 1)];
+      var ix = randInt(iRoom.x, iRoom.x + iRoom.w - 1);
+      var iy = randInt(iRoom.y, iRoom.y + iRoom.h - 1);
+      if (ix === start.x && iy === start.y) continue;
+      if (ix === stairs.x && iy === stairs.y) continue;
+      var tileTaken = false;
+      for (var m = 0; m < enemies.length; m++) {
+        if (enemies[m].x === ix && enemies[m].y === iy) { tileTaken = true; break; }
+      }
+      if (!tileTaken) {
+        for (var n = 0; n < items.length; n++) {
+          if (items[n].x === ix && items[n].y === iy) { tileTaken = true; break; }
+        }
+      }
+      if (tileTaken) continue;
+      var itemType = pickWeightedItemType();
+      items.push({
+        x: ix, y: iy, type: itemType, alive: true,
+        amount: itemType === 'gold' ? randInt(5, 15) : 0
+      });
+    }
+
+    return { grid: grid, W: W, H: H, rooms: rooms, start: start, stairs: stairs, enemies: enemies, items: items };
+  }
+
+  function idx(x, y) { return y * state.W + x; }
+  function inBounds(x, y) { return x >= 0 && y >= 0 && x < state.W && y < state.H; }
+  function isWalkable(x, y) {
+    if (!inBounds(x, y)) return false;
+    return state.grid[idx(x, y)] !== 0;
+  }
+  function enemyAt(x, y) {
+    for (var i = 0; i < state.enemies.length; i++) {
+      var e = state.enemies[i];
+      if (e.alive && e.x === x && e.y === y) return e;
+    }
+    return null;
+  }
+  function itemAt(x, y) {
+    for (var i = 0; i < state.items.length; i++) {
+      var it = state.items[i];
+      if (it.alive && it.x === x && it.y === y) return it;
+    }
+    return null;
+  }
+  function findBoss() {
+    for (var i = 0; i < state.enemies.length; i++) {
+      if (state.enemies[i].isBoss && state.enemies[i].alive) return state.enemies[i];
+    }
+    return null;
+  }
+
+  function hasLineOfSight(x0, y0, x1, y1) {
+    var dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+    var sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    var err = dx - dy;
+    var x = x0, y = y0;
+    while (true) {
+      if (x === x1 && y === y1) return true;
+      if (!(x === x0 && y === y0) && state.grid[idx(x, y)] === 0) return false;
+      var e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; x += sx; }
+      if (e2 < dx) { err += dx; y += sy; }
+    }
+  }
+
+  function computeVisibility() {
+    state.visible.fill(0);
+    var px = state.player.x, py = state.player.y;
+    var r = VISION_RADIUS;
+    for (var dy = -r; dy <= r; dy++) {
+      for (var dx = -r; dx <= r; dx++) {
+        var x = px + dx, y = py + dy;
+        if (!inBounds(x, y)) continue;
+        if (dx * dx + dy * dy > r * r) continue;
+        if (hasLineOfSight(px, py, x, y)) {
+          var i = idx(x, y);
+          state.visible[i] = 1;
+          state.discovered[i] = 1;
+        }
+      }
+    }
+  }
+
+  // ---- fx layer: purely cosmetic, reads state, never mutates it ----
+
+  var fx = {
+    entities: {},
+    particles: [],
+    bursts: [],
+    projectiles: [],
+    shake: { t: 0, dur: 0, mag: 0 },
+    vignetteT: 0,
+    lastTime: 0
+  };
+
+  function fxReset() {
+    fx.entities = {};
+    fx.particles = [];
+    fx.bursts = [];
+    fx.projectiles = [];
+    fx.shake = { t: 0, dur: 0, mag: 0 };
+  }
+
+  function fxSyncEntity(id, x, y, durMs) {
+    var e = fx.entities[id];
+    if (!e) {
+      e = { x: x, y: y, fromX: x, fromY: y, toX: x, toY: y, t: 1, dur: 1, flashUntil: 0 };
+      fx.entities[id] = e;
+      return e;
+    }
+    if (e.toX !== x || e.toY !== y) {
+      e.fromX = e.x;
+      e.fromY = e.y;
+      e.toX = x;
+      e.toY = y;
+      e.t = 0;
+      e.dur = durMs;
+    }
+    return e;
+  }
+
+  function fxHitFlash(id) {
+    var e = fx.entities[id];
+    if (!e) return;
+    e.flashUntil = fx.lastTime + 140;
+  }
+
+  function fxSpawnFloatingText(x, y, text, color) {
+    fx.particles.push({ x: x + 0.5, y: y + 0.2, vy: -0.9, text: text, color: color, t: 0, dur: 700 });
+  }
+
+  function fxDeathBurst(x, y, color) {
+    var burst = { x: x + 0.5, y: y + 0.5, t: 0, dur: 420, color: color, dots: [] };
+    var n = 8;
+    for (var i = 0; i < n; i++) {
+      var ang = (Math.PI * 2 * i) / n;
+      burst.dots.push({ vx: Math.cos(ang), vy: Math.sin(ang) });
+    }
+    fx.bursts.push(burst);
+  }
+
+  function fxSpawnProjectile(x0, y0, x1, y1, color, durMs) {
+    fx.projectiles.push({ x0: x0, y0: y0, x1: x1, y1: y1, t: 0, dur: durMs, color: color, trail: false });
+  }
+
+  function fxDashTrail(x0, y0, x1, y1) {
+    fx.projectiles.push({ x0: x0, y0: y0, x1: x1, y1: y1, t: 0, dur: 160, color: COLOR_PLAYER, trail: true });
+  }
+
+  function fxScreenShake(mag, durMs) {
+    fx.shake.mag = mag;
+    fx.shake.dur = durMs;
+    fx.shake.t = 0;
+  }
+
+  function fxUpdate(dt) {
+    var id;
+    for (id in fx.entities) {
+      var e = fx.entities[id];
+      if (e.t < 1) {
+        e.t = Math.min(1, e.t + dt / e.dur);
+        var k = 1 - Math.pow(1 - e.t, 2);
+        e.x = e.fromX + (e.toX - e.fromX) * k;
+        e.y = e.fromY + (e.toY - e.fromY) * k;
+      }
+    }
+    var i;
+    for (i = fx.particles.length - 1; i >= 0; i--) {
+      fx.particles[i].t += dt;
+      if (fx.particles[i].t >= fx.particles[i].dur) fx.particles.splice(i, 1);
+    }
+    for (i = fx.bursts.length - 1; i >= 0; i--) {
+      fx.bursts[i].t += dt;
+      if (fx.bursts[i].t >= fx.bursts[i].dur) fx.bursts.splice(i, 1);
+    }
+    for (i = fx.projectiles.length - 1; i >= 0; i--) {
+      fx.projectiles[i].t += dt;
+      if (fx.projectiles[i].t >= fx.projectiles[i].dur) fx.projectiles.splice(i, 1);
+    }
+    if (fx.shake.t < fx.shake.dur) fx.shake.t += dt;
+  }
+
+  // ---- floor / game lifecycle ----
+
+  function loadFloor(floorNum) {
+    var f = generateFloor(floorNum);
+    state.floor = floorNum;
+    state.grid = f.grid;
+    state.W = f.W;
+    state.H = f.H;
+    state.enemies = f.enemies;
+    state.items = f.items;
+    state.visible = new Uint8Array(f.W * f.H);
+    state.discovered = new Uint8Array(f.W * f.H);
+    state.player.x = f.start.x;
+    state.player.y = f.start.y;
+    fxReset();
+    computeVisibility();
+    var boss = findBoss();
+    if (boss) showBossBanner(boss.name);
+  }
+
+  function newGame() {
+    state = {
+      floor: 1,
+      player: {
+        x: 0, y: 0, hp: 20, maxHp: 20, atk: 3, kills: 0, gold: 0,
+        mp: 0, maxMp: 10, facing: 'down', hasFireball: false, hasDash: false
+      },
+      turns: 0,
+      gameOver: false,
+      deathCause: '',
+      message: 'You descend into the torch-lit catacombs...'
+    };
+    hideGameOver();
+    hideToast();
+    hideBossBanner();
+    loadFloor(1);
+    updateBestHud();
+    render();
+  }
+
+  function loadBest() {
+    try {
+      if (typeof localStorage === 'undefined') return null;
+      var raw = localStorage.getItem(BEST_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.score !== 'number') return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveBest(best) {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      localStorage.setItem(BEST_KEY, JSON.stringify(best));
+    } catch (e) {
+      // localStorage unavailable (privacy mode, file:// restrictions, etc) - skip persistence
+    }
+  }
+
+  function computeScore(s) {
+    return s.floor * 100 + s.player.kills * 10 + s.player.gold;
+  }
+
+  function updateBestHud() {
+    var best = loadBest();
+    bestHudEl.textContent = best
+      ? 'BEST  score ' + best.score + '   depth ' + best.depth + '   ' + best.kills + ' kills'
+      : '';
+  }
+
+  // ---- items ----
+
+  function pickupItem(item) {
+    item.alive = false;
+    if (item.type === 'potion') {
+      var healed = Math.min(8, state.player.maxHp - state.player.hp);
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 8);
+      state.message = 'You drink a potion. (+' + healed + ' HP)';
+      fxSpawnFloatingText(item.x, item.y, '+' + healed + ' HP', '#ff6b81');
+    } else if (item.type === 'sword') {
+      state.player.atk += 1;
+      state.message = 'You find a rusty sword. Attack +1! (atk ' + state.player.atk + ')';
+      fxSpawnFloatingText(item.x, item.y, 'ATK+1', '#cfd8dc');
+    } else if (item.type === 'shield') {
+      state.player.maxHp += 5;
+      state.player.hp += 5;
+      state.message = 'You find a shield. Max HP +5! (' + state.player.maxHp + ' max hp)';
+      fxSpawnFloatingText(item.x, item.y, 'HP+5', '#9fd8ff');
+    } else if (item.type === 'gold') {
+      state.player.gold += item.amount;
+      state.message = 'You find ' + item.amount + ' gold.';
+      fxSpawnFloatingText(item.x, item.y, '+' + item.amount + 'g', '#fff176');
+    } else if (item.type === 'tome') {
+      if (!state.player.hasFireball) {
+        state.player.hasFireball = true;
+        state.message = 'You learn to cast Fireball! (press F)';
+        showToast('FIREBALL UNLOCKED');
+      } else {
+        state.player.maxMp += 3;
+        state.player.mp = Math.min(state.player.maxMp, state.player.mp + 3);
+        state.message = 'The tome resonates. Max MP +3! (' + state.player.maxMp + ')';
+        fxSpawnFloatingText(item.x, item.y, 'MP+3', '#c77dff');
+      }
+    } else if (item.type === 'boots') {
+      if (!state.player.hasDash) {
+        state.player.hasDash = true;
+        state.message = 'You learn to Dash! (press SPACE)';
+        showToast('DASH UNLOCKED');
+      } else {
+        state.player.maxMp += 3;
+        state.player.mp = Math.min(state.player.maxMp, state.player.mp + 3);
+        state.message = 'The boots hum with energy. Max MP +3! (' + state.player.maxMp + ')';
+        fxSpawnFloatingText(item.x, item.y, 'MP+3', '#7dd3ff');
+      }
+    }
+  }
+
+  // ---- combat ----
+
+  function attackEnemy(enemy, dmg) {
+    var amount = dmg || state.player.atk;
+    enemy.hp -= amount;
+    fxHitFlash(enemy.id);
+    fxSpawnFloatingText(enemy.x, enemy.y, '-' + amount, '#ffe066');
+    if (enemy.hp <= 0) {
+      enemy.hp = 0;
+      enemy.alive = false;
+      state.player.kills++;
+      fxDeathBurst(enemy.x, enemy.y, enemy.isBoss ? enemy.bossColor : COLOR_ENEMY);
+      state.message = 'You slay the ' + enemy.name + '!';
+    } else {
+      state.message = 'You strike the ' + enemy.name + ' (' + enemy.hp + '/' + enemy.maxHp + ' hp).';
+    }
+  }
+
+  function attackPlayer(enemy, mult) {
+    var amount = enemy.atk * (mult || 1);
+    state.player.hp -= amount;
+    fxHitFlash('player');
+    fxSpawnFloatingText(state.player.x, state.player.y, '-' + amount, '#ff5f5f');
+    fxScreenShake(mult && mult > 1 ? 8 : 4, 220);
+    if (state.player.hp <= 0) {
+      state.player.hp = 0;
+      endGame(enemy.name);
+    } else {
+      state.message = 'The ' + enemy.name + ' hits you! (' + state.player.hp + '/' + state.player.maxHp + ' hp)';
+    }
+  }
+
+  function endGame(killerName) {
+    state.gameOver = true;
+    state.deathCause = killerName;
+    var score = computeScore(state);
+    var best = loadBest();
+    var isNewBest = !best || score > best.score;
+    if (isNewBest) {
+      best = { score: score, depth: state.floor, kills: state.player.kills, gold: state.player.gold, turns: state.turns };
+      saveBest(best);
+    }
+    showGameOver(score, best, isNewBest);
+    updateBestHud();
+  }
+
+  function checkStairs() {
+    if (state.grid[idx(state.player.x, state.player.y)] === 2) {
+      var boss = findBoss();
+      if (boss) {
+        state.message = 'The ' + boss.name + ' blocks your path - defeat it first!';
+        return;
+      }
+      state.message = 'You descend deeper into the catacombs...';
+      loadFloor(state.floor + 1);
+    }
+  }
+
+  function runEnemyTurn() {
+    for (var i = 0; i < state.enemies.length; i++) {
+      var e = state.enemies[i];
+      if (!e.alive || state.gameOver) continue;
+      var dx0 = state.player.x - e.x, dy0 = state.player.y - e.y;
+      var dist2 = dx0 * dx0 + dy0 * dy0;
+      if (dist2 > VISION_RADIUS * VISION_RADIUS) continue;
+      if (!hasLineOfSight(e.x, e.y, state.player.x, state.player.y)) continue;
+
+      var dx = dx0 === 0 ? 0 : (dx0 > 0 ? 1 : -1);
+      var dy = dy0 === 0 ? 0 : (dy0 > 0 ? 1 : -1);
+      var tx = e.x + dx, ty = e.y + dy;
+
+      if (tx === state.player.x && ty === state.player.y) {
+        if (e.isBoss) {
+          e.powerAttackCounter++;
+          attackPlayer(e, e.powerAttackCounter % 4 === 0 ? 2 : 1);
+        } else {
+          attackPlayer(e);
+        }
+      } else if (isWalkable(tx, ty) && !enemyAt(tx, ty)) {
+        e.x = tx; e.y = ty;
+      } else if (dx !== 0 && isWalkable(e.x + dx, e.y) && !enemyAt(e.x + dx, e.y)) {
+        e.x += dx;
+      } else if (dy !== 0 && isWalkable(e.x, e.y + dy) && !enemyAt(e.x, e.y + dy)) {
+        e.y += dy;
+      }
+    }
+  }
+
+  // ---- player turn / abilities ----
+
+  function canAct() { return !!state && !state.gameOver; }
+
+  function setFacing(dx, dy) {
+    if (dx > 0) state.player.facing = 'right';
+    else if (dx < 0) state.player.facing = 'left';
+    else if (dy > 0) state.player.facing = 'down';
+    else if (dy < 0) state.player.facing = 'up';
+  }
+
+  function endPlayerTurn() {
+    state.turns++;
+    state.player.mp = Math.min(state.player.maxMp, state.player.mp + 1);
+    computeVisibility();
+    checkStairs();
+    if (!state.gameOver) runEnemyTurn();
+  }
+
+  function tryMovePlayer(dx, dy) {
+    if (!canAct()) return;
+    setFacing(dx, dy);
+    var nx = state.player.x + dx, ny = state.player.y + dy;
+    var target = enemyAt(nx, ny);
+    if (target) {
+      attackEnemy(target);
+    } else if (isWalkable(nx, ny)) {
+      state.player.x = nx;
+      state.player.y = ny;
+      var item = itemAt(nx, ny);
+      if (item) pickupItem(item);
+    } else {
+      return; // bump into a wall: no turn consumed
+    }
+    endPlayerTurn();
+  }
+
+  function useFireball() {
+    if (!canAct() || !state.player.hasFireball) return;
+    if (state.player.mp < ABILITY_COST.fireball) {
+      state.message = 'Not enough MP to cast Fireball.';
+      return;
+    }
+    state.player.mp -= ABILITY_COST.fireball;
+    var d = FACING_DELTA[state.player.facing];
+    var x = state.player.x, y = state.player.y;
+    var hitEnemy = null;
+    var maxSteps = Math.max(state.W, state.H);
+    var steps = 0;
+    while (steps < maxSteps) {
+      var nx = x + d.dx, ny = y + d.dy;
+      if (!isWalkable(nx, ny)) break;
+      x = nx; y = ny;
+      steps++;
+      var e = enemyAt(x, y);
+      if (e) { hitEnemy = e; break; }
+    }
+    fxSpawnProjectile(state.player.x, state.player.y, x, y, '#ff8a3d', 180);
+    if (hitEnemy) {
+      attackEnemy(hitEnemy, state.player.atk * 2);
+    } else {
+      state.message = 'Your fireball fizzles against the wall.';
+    }
+    endPlayerTurn();
+  }
+
+  function useDash() {
+    if (!canAct() || !state.player.hasDash) return;
+    if (state.player.mp < ABILITY_COST.dash) {
+      state.message = 'Not enough MP to Dash.';
+      return;
+    }
+    var d = FACING_DELTA[state.player.facing];
+    var midX = state.player.x + d.dx, midY = state.player.y + d.dy;
+    var destX = state.player.x + d.dx * 2, destY = state.player.y + d.dy * 2;
+    if (!isWalkable(midX, midY) || enemyAt(midX, midY) || !isWalkable(destX, destY) || enemyAt(destX, destY)) {
+      state.message = 'Not enough room to dash.';
+      return;
+    }
+    state.player.mp -= ABILITY_COST.dash;
+    fxDashTrail(state.player.x, state.player.y, destX, destY);
+    state.player.x = destX;
+    state.player.y = destY;
+    var item = itemAt(destX, destY);
+    if (item) pickupItem(item);
+    state.message = 'You dash forward!';
+    endPlayerTurn();
+  }
+
+  // ---- camera / rendering ----
+
+  function computeCamera() {
+    var viewCols = Math.floor(canvas.width / TILE);
+    var viewRows = Math.floor(canvas.height / TILE);
+    var camX = state.player.x - Math.floor(viewCols / 2);
+    var camY = state.player.y - Math.floor(viewRows / 2);
+    camX = Math.max(0, Math.min(camX, Math.max(0, state.W - viewCols)));
+    camY = Math.max(0, Math.min(camY, Math.max(0, state.H - viewRows)));
+    return { camX: camX, camY: camY, viewCols: viewCols, viewRows: viewRows };
+  }
+
+  function tileGlyphAndColor(gx, gy) {
+    var i = idx(gx, gy);
+    var dim = !state.visible[i];
+    var it = itemAt(gx, gy);
+    if (it) {
+      var def = ITEM_DEFS[it.type];
+      return { ch: def.glyph, color: dim ? def.dim : def.lit };
+    }
+    var tile = state.grid[i];
+    if (tile === 0) return { ch: '#', color: dim ? COLOR_WALL_DIM : COLOR_WALL_LIT };
+    if (tile === 2) return { ch: '>', color: dim ? COLOR_STAIRS_DIM : COLOR_STAIRS_LIT };
+    return { ch: '.', color: dim ? COLOR_FLOOR_DIM : COLOR_FLOOR_LIT };
+  }
+
+  function drawFx(cam) {
+    var i;
+    for (i = 0; i < fx.projectiles.length; i++) {
+      var pr = fx.projectiles[i];
+      var k = Math.min(1, pr.t / pr.dur);
+      var x = pr.x0 + (pr.x1 - pr.x0) * k;
+      var y = pr.y0 + (pr.y1 - pr.y0) * k;
+      var px = (x - cam.camX) * TILE + TILE / 2, py = (y - cam.camY) * TILE + TILE / 2;
+      ctx.fillStyle = pr.color;
+      ctx.beginPath();
+      ctx.arc(px, py, pr.trail ? 3 : 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (i = 0; i < fx.bursts.length; i++) {
+      var b = fx.bursts[i];
+      var bk = Math.min(1, b.t / b.dur);
+      var alpha = 1 - bk;
+      var dist = bk * TILE * 0.9;
+      ctx.fillStyle = b.color;
+      for (var d = 0; d < b.dots.length; d++) {
+        var dot = b.dots[d];
+        var dx = (b.x - cam.camX) * TILE + dot.vx * dist;
+        var dy = (b.y - cam.camY) * TILE + dot.vy * dist;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(dx - 1.5, dy - 1.5, 3, 3);
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.font = "12px 'Courier New', monospace";
+    ctx.textBaseline = 'alphabetic';
+    for (i = 0; i < fx.particles.length; i++) {
+      var p = fx.particles[i];
+      var pk = Math.min(1, p.t / p.dur);
+      var ppx = (p.x - cam.camX) * TILE;
+      var ppy = (p.y + p.vy * pk - cam.camY) * TILE;
+      ctx.globalAlpha = 1 - pk;
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, ppx, ppy);
+    }
+    ctx.globalAlpha = 1;
+    ctx.font = TILE + "px 'Courier New', monospace";
+    ctx.textBaseline = 'top';
+  }
+
+  function drawVignette() {
+    fx.vignetteT += 1;
+    var flicker = 0.85 + Math.sin(fx.vignetteT * 0.05) * 0.08 + Math.sin(fx.vignetteT * 0.13) * 0.04;
+    var cx = canvas.width / 2, cy = canvas.height / 2;
+    var innerR = Math.min(canvas.width, canvas.height) * 0.28 * flicker;
+    var outerR = Math.max(canvas.width, canvas.height) * 0.75;
+    var grad = ctx.createRadialGradient(cx, cy, Math.max(0, innerR), cx, cy, Math.max(1, outerR));
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function render() {
+    ctx.save();
+    var shakeX = 0, shakeY = 0;
+    if (fx.shake.t < fx.shake.dur) {
+      var remaining = 1 - (fx.shake.t / fx.shake.dur);
+      shakeX = (Math.random() * 2 - 1) * fx.shake.mag * remaining;
+      shakeY = (Math.random() * 2 - 1) * fx.shake.mag * remaining;
+    }
+    ctx.translate(shakeX, shakeY);
+
+    ctx.fillStyle = COLOR_BG;
+    ctx.fillRect(-10, -10, canvas.width + 20, canvas.height + 20);
+
+    if (!state) { ctx.restore(); return; }
+
+    var cam = computeCamera();
+    ctx.font = TILE + "px 'Courier New', monospace";
+    ctx.textBaseline = 'top';
+
+    for (var vy = 0; vy < cam.viewRows; vy++) {
+      for (var vx = 0; vx < cam.viewCols; vx++) {
+        var gx = cam.camX + vx, gy = cam.camY + vy;
+        if (!inBounds(gx, gy)) continue;
+        var i = idx(gx, gy);
+        if (!state.discovered[i]) continue;
+        var gc = tileGlyphAndColor(gx, gy);
+        ctx.fillStyle = gc.color;
+        ctx.fillText(gc.ch, vx * TILE, vy * TILE);
+      }
+    }
+
+    for (var ei = 0; ei < state.enemies.length; ei++) {
+      var en = state.enemies[ei];
+      if (!en.alive) continue;
+      var eIdx = idx(en.x, en.y);
+      if (!state.visible[eIdx]) continue;
+      var ent = fxSyncEntity(en.id, en.x, en.y, MOVE_ANIM_MS);
+      var epx = (ent.x - cam.camX) * TILE, epy = (ent.y - cam.camY) * TILE;
+      var eFlash = fx.lastTime < ent.flashUntil;
+      ctx.fillStyle = eFlash ? '#ffffff' : (en.isBoss ? en.bossColor : COLOR_ENEMY);
+      ctx.fillText(en.glyph, epx, epy);
+    }
+
+    var pent = fxSyncEntity('player', state.player.x, state.player.y, MOVE_ANIM_MS);
+    var ppx = (pent.x - cam.camX) * TILE, ppy = (pent.y - cam.camY) * TILE;
+    var pFlash = fx.lastTime < pent.flashUntil;
+    ctx.fillStyle = pFlash ? '#ff5f5f' : COLOR_PLAYER;
+    ctx.fillText('@', ppx, ppy);
+
+    drawFx(cam);
+    drawVignette();
+
+    ctx.restore();
+    updateHUD();
+    updateAbilityButtons();
+  }
+
+  function updateHUD() {
+    hudEl.textContent =
+      'HP ' + state.player.hp + '/' + state.player.maxHp +
+      '   MP ' + state.player.mp + '/' + state.player.maxMp +
+      '   DEPTH ' + state.floor +
+      '   KILLS ' + state.player.kills +
+      '   GOLD ' + state.player.gold +
+      '\n' + (state.message || '');
+  }
+
+  function updateAbilityButtons() {
+    if (!state) return;
+    btnFireEl.classList.toggle('ability-locked', !state.player.hasFireball);
+    btnDashEl.classList.toggle('ability-locked', !state.player.hasDash);
+  }
+
+  function showGameOver(score, best, isNewBest) {
+    var bestLine = best
+      ? '<div class="go-best">Best: depth ' + best.depth + ', ' + best.kills + ' kills, ' +
+        best.gold + ' gold (score ' + best.score + ')</div>'
+      : '';
+    gameOverEl.innerHTML =
+      '<div class="go-title">YOU HAVE FALLEN</div>' +
+      '<div>Slain by a ' + state.deathCause + ' at depth ' + state.floor + '</div>' +
+      '<div>Kills: ' + state.player.kills + '   Gold: ' + state.player.gold + '   Turns: ' + state.turns + '</div>' +
+      '<div>Score: ' + score + (isNewBest ? '  <span class="go-newbest">NEW BEST!</span>' : '') + '</div>' +
+      bestLine +
+      '<div class="go-hint">Press ENTER, SPACE, or tap to descend again</div>';
+    gameOverEl.style.display = 'flex';
+  }
+
+  function hideGameOver() {
+    gameOverEl.style.display = 'none';
+  }
+
+  var toastTimer = null;
+  function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 2200);
+  }
+  function hideToast() {
+    toastEl.classList.remove('show');
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+  }
+
+  var bossBannerTimer = null;
+  function showBossBanner(name) {
+    bossBannerEl.textContent = name.toUpperCase() + ' AWAKENS';
+    bossBannerEl.classList.add('show');
+    fxScreenShake(10, 500);
+    if (bossBannerTimer) clearTimeout(bossBannerTimer);
+    bossBannerTimer = setTimeout(hideBossBanner, 2600);
+  }
+  function hideBossBanner() {
+    bossBannerEl.classList.remove('show');
+    if (bossBannerTimer) { clearTimeout(bossBannerTimer); bossBannerTimer = null; }
+  }
+
+  // ---- input ----
+
+  window.addEventListener('keydown', function (e) {
+    if (state && state.gameOver) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        newGame();
+      }
+      return;
+    }
+    if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      useFireball();
+      return;
+    }
+    if (e.key === ' ') {
+      e.preventDefault();
+      useDash();
+      return;
+    }
+    var map = {
+      ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+      w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0],
+      W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0]
+    };
+    var dir = map[e.key];
+    if (dir) {
+      e.preventDefault();
+      tryMovePlayer(dir[0], dir[1]);
+    }
+  });
+
+  dpadEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    if (state && state.gameOver) { newGame(); return; }
+    tryMovePlayer(parseInt(btn.dataset.dx, 10), parseInt(btn.dataset.dy, 10));
+  });
+
+  abilitiesEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    if (state && state.gameOver) { newGame(); return; }
+    if (btn.dataset.ability === 'fireball') useFireball();
+    else if (btn.dataset.ability === 'dash') useDash();
+  });
+
+  gameOverEl.addEventListener('click', function () {
+    newGame();
+  });
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    if (state) render();
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  function startRenderLoop(now) {
+    var dt = fx.lastTime ? now - fx.lastTime : 16;
+    fx.lastTime = now;
+    fxUpdate(dt);
+    render();
+    requestAnimationFrame(startRenderLoop);
+  }
+
+  resizeCanvas();
+  newGame();
+  requestAnimationFrame(startRenderLoop);
+})();
+</script>
+</body>
+</html>

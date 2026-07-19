@@ -35,7 +35,8 @@ Because the date/title are derived purely from the filename, new posts must foll
 - `posts/` — individual blog post pages, each self-contained HTML using the shared `styles.css`.
 - `projects/` — standalone sub-projects, each in its own directory with its own HTML/CSS/JS (e.g. `projects/json-prettifier/`). These are independent mini-apps, not part of the main page template.
 - `skullbreaker.html` — a standalone Three.js browser game at the site root, linked from the `.games` section of `index.html`. It pulls Three.js from a CDN (`cdnjs.cloudflare.com`) and is entirely self-contained (inline `<style>` and `<script>`), unlike the `posts/`/`projects/` pages which link external `styles.css`/`.js` files.
-- `styles.css` — shared stylesheet for the homepage and blog posts (monospace, narrow centered container, minimal color palette). Project pages under `projects/` and `skullbreaker.html` have their own separate styles instead of using this file.
+- `catacombs.html` — a standalone turn-based roguelike dungeon crawler at the site root, also linked from the `.games` section of `index.html`. Like `skullbreaker.html` it's fully self-contained (inline `<style>` and `<script>`, no `styles.css`), but unlike it, `catacombs.html` has zero external dependencies — pure vanilla JS and Canvas 2D, no CDN.
+- `styles.css` — shared stylesheet for the homepage and blog posts (monospace, narrow centered container, minimal color palette). Project pages under `projects/`, `skullbreaker.html`, and `catacombs.html` have their own separate styles instead of using this file.
 
 ## Conventions
 
