@@ -3,8 +3,9 @@
 import { parseHTML } from "linkedom";
 import { Readability } from "@mozilla/readability";
 import { auth } from "@/auth";
-import { isBlockedDomain } from "@/lib/blocked-domains";
 import { isDisallowedHost } from "@/lib/url-safety";
+import { isSubmittedToHN } from "@/lib/hn-gate";
+import { isTextSafe } from "@/lib/moderation";
 import { extractBlocks, type ArticleBlock } from "@/lib/extract-blocks";
 
 export type ExtractState =
@@ -73,8 +74,20 @@ export async function extractArticle(
       return { status: "error", message: "That address isn't reachable from here." };
     }
 
-    if (isBlockedDomain(url.hostname)) {
-      return { status: "error", message: "This site isn't supported here." };
+    try {
+      const submitted = await isSubmittedToHN(url);
+      if (!submitted) {
+        return {
+          status: "error",
+          message: "This link doesn't appear to have been submitted to Hacker News.",
+        };
+      }
+    } catch (err) {
+      console.error("HN gate check failed:", err);
+      return {
+        status: "error",
+        message: "Couldn't verify that link right now — try again in a moment.",
+      };
     }
 
     const controller = new AbortController();
@@ -129,19 +142,36 @@ export async function extractArticle(
     }
 
     const blocks = extractBlocks(article.content ?? "");
+    const resolvedBlocks: ArticleBlock[] =
+      blocks.length > 0
+        ? blocks
+        : article.textContent
+            .trim()
+            .split(/\n{2,}/)
+            .map((text) => ({ type: "paragraph" as const, text: text.trim() }))
+            .filter((block) => block.text);
+
+    const title = article.title ?? "";
+    const combinedText = [title, ...resolvedBlocks.map((b) => b.text)].join("\n\n");
+
+    try {
+      const safe = await isTextSafe(combinedText);
+      if (!safe) {
+        return { status: "error", message: "This content isn't available here." };
+      }
+    } catch (err) {
+      console.error("Moderation check failed:", err);
+      return {
+        status: "error",
+        message: "Couldn't verify that content — try again in a moment.",
+      };
+    }
 
     return {
       status: "success",
-      title: article.title ?? "",
+      title,
       byline: article.byline ?? null,
-      blocks:
-        blocks.length > 0
-          ? blocks
-          : article.textContent
-              .trim()
-              .split(/\n{2,}/)
-              .map((text) => ({ type: "paragraph" as const, text: text.trim() }))
-              .filter((block) => block.text),
+      blocks: resolvedBlocks,
     };
   } catch {
     return { status: "error", message: "Something went wrong reading that page." };
