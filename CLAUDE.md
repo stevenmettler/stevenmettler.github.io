@@ -2,7 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What this is
+## IMPORTANT: the real site is in `web/`
+
+The actual live site (stevenmettler.com) is the Next.js app in `web/` — deployed via Vercel (see `web/.vercel/project.json`, project `smettler-website`). It has its own blog with a database (drizzle/pg), auth, a guestbook, and a games section (`web/src/app/games/`, static game files served from `web/public/games/`). See `web/CLAUDE.md` / `web/AGENTS.md` for guidance specific to that app.
+
+Everything described below this point — the root-level `index.html`, `posts/`, `skullbreaker.html`, `catacombs.html`, `styles.css`, GitHub Pages via `CNAME` — is a **legacy, unused static site**. It still lives in this same repo at the root, and `git push` still updates it on GitHub, but nothing points a real visitor at it anymore. Do not add new features here or assume changes here go live — always make site changes in `web/` unless explicitly told otherwise.
+
+## What this is (legacy root-level static site — not the live site, see above)
 
 Steven Mettler's personal site, served via GitHub Pages at stevenmettler.com (see `CNAME`). It's static HTML/CSS/JS — no build step, no framework, no package.json, no test suite.
 
