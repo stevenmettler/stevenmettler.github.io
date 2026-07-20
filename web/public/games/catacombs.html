@@ -54,7 +54,7 @@
     font-family: 'Courier New', Courier, monospace;
     text-align: center;
     gap: 10px;
-    z-index: 10;
+    z-index: 12;
     cursor: pointer;
     padding: 20px;
   }
@@ -175,7 +175,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.75);
-    z-index: 11;
+    z-index: 10;
     font-family: 'Courier New', Courier, monospace;
     color: #7dd3ff;
     text-align: center;
@@ -205,6 +205,115 @@
   #shop .shop-offer:active { background: rgba(125, 211, 255, 0.3); }
   #shop .shop-offer:disabled { opacity: 0.35; cursor: default; border-color: #2a3a45; color: #4a6a78; }
   #shop .shop-hint { margin-top: 14px; opacity: 0.7; font-size: 12px; }
+
+  #levelUp {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.78);
+    z-index: 11;
+    font-family: 'Courier New', Courier, monospace;
+    color: #ffd54a;
+    text-align: center;
+    padding: 20px;
+  }
+  #levelUp .lvl-title {
+    font-size: 24px;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 10px rgba(255, 213, 74, 0.8);
+  }
+  #levelUp .lvl-sub { opacity: 0.75; margin-bottom: 16px; font-size: 13px; }
+  #levelUp .lvl-option {
+    display: block;
+    width: 320px;
+    margin: 8px auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    background: rgba(255, 213, 74, 0.1);
+    border: 1px solid #ffd54a;
+    color: #ffd54a;
+    padding: 10px 12px;
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+  }
+  #levelUp .lvl-option:active { background: rgba(255, 213, 74, 0.3); }
+  #levelUp .lvl-hint { margin-top: 14px; opacity: 0.7; font-size: 12px; }
+
+  #guideBtn {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 18px;
+    font-weight: bold;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    z-index: 6;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #guideBtn:active { background: rgba(76, 175, 80, 0.4); }
+
+  #guide {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.82);
+    z-index: 11;
+    font-family: 'Courier New', Courier, monospace;
+    color: #4caf50;
+    padding: 20px;
+  }
+  #guide .guide-panel {
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid #4caf50;
+    border-radius: 6px;
+    padding: 20px;
+    background: rgba(2, 4, 2, 0.92);
+    text-align: left;
+  }
+  #guide .guide-title {
+    font-size: 20px;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    text-align: center;
+    text-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
+  }
+  #guide h3 { margin: 14px 0 6px; font-size: 12px; letter-spacing: 1px; color: #ffd54a; }
+  #guide .guide-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    padding: 2px 0;
+    opacity: 0.9;
+  }
+  #guide .guide-key { color: #eafbea; white-space: nowrap; }
+  #guide .guide-close {
+    display: block;
+    margin: 16px auto 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #guide .guide-close:active { background: rgba(76, 175, 80, 0.4); }
 </style>
 </head>
 <body>
@@ -219,13 +328,17 @@
   <button class="dpad-down" data-dx="0" data-dy="1">&darr;</button>
 </div>
 <div id="abilities">
+  <button id="btnShot" class="ability-locked" data-ability="shot">SHOT</button>
   <button id="btnFire" class="ability-locked" data-ability="fireball">FIRE</button>
   <button id="btnDash" class="ability-locked" data-ability="dash">DASH</button>
 </div>
+<button id="guideBtn" title="How to play">?</button>
 <div id="toast"></div>
 <div id="bossBanner"></div>
 <div id="gameOver"></div>
 <div id="shop"></div>
+<div id="levelUp"></div>
+<div id="guide"></div>
 
 <script>
 (function () {
@@ -236,17 +349,22 @@
   var gameOverEl = document.getElementById('gameOver');
   var dpadEl = document.getElementById('dpad');
   var abilitiesEl = document.getElementById('abilities');
+  var btnShotEl = document.getElementById('btnShot');
   var btnFireEl = document.getElementById('btnFire');
   var btnDashEl = document.getElementById('btnDash');
   var toastEl = document.getElementById('toast');
   var bossBannerEl = document.getElementById('bossBanner');
   var shopEl = document.getElementById('shop');
+  var levelUpEl = document.getElementById('levelUp');
+  var guideEl = document.getElementById('guide');
+  var guideBtnEl = document.getElementById('guideBtn');
   var BEST_KEY = 'catacombs_best_v1';
   var STATS_KEY = 'catacombs_stats_v1';
 
   var TILE = 20;
   var VISION_RADIUS = 6;
   var RANGED_RADIUS = 5;
+  var SHOT_RANGE = 6;
   var MOVE_ANIM_MS = 130;
   var ABILITY_COST = { fireball: 4, dash: 2 };
   var CRIT_CHANCE = 0.15;
@@ -313,6 +431,45 @@
     } }
   ];
 
+  var LEVEL_UP_OPTIONS = [
+    { key: '1', name: 'Vitality',
+      label: function () { return 'Vitality — Max HP +10'; },
+      apply: function () {
+        state.player.maxHp += 10;
+        state.player.hp += 10;
+      } },
+    { key: '2', name: 'Might',
+      label: function () { return 'Might — Attack +2'; },
+      apply: function () {
+        state.player.atk += 2;
+      } },
+    { key: '3', name: 'Arcane Path',
+      label: function () {
+        return state.player.hasFireball ? 'Arcane Focus — Max MP +5' : 'Awaken Magic — unlock Fireball (F)';
+      },
+      apply: function () {
+        if (!state.player.hasFireball) {
+          state.player.hasFireball = true;
+          showToast('FIREBALL UNLOCKED');
+        } else {
+          state.player.maxMp += 5;
+          state.player.mp = Math.min(state.player.maxMp, state.player.mp + 5);
+        }
+      } },
+    { key: '4', name: 'Ranger Path',
+      label: function () {
+        return state.player.hasShot ? 'Marksmanship — Shot damage +2' : 'Awaken Marksmanship — unlock Ranged Shot (R)';
+      },
+      apply: function () {
+        if (!state.player.hasShot) {
+          state.player.hasShot = true;
+          showToast('RANGED SHOT UNLOCKED');
+        } else {
+          state.player.shotBonus += 2;
+        }
+      } }
+  ];
+
   var state = null;
   var _fxIdCounter = 0;
 
@@ -345,6 +502,8 @@
       atk: 1 + Math.floor(floor / 2)
     };
   }
+
+  function xpForLevel(level) { return 20 + (level - 1) * 15; }
 
   function isBossFloor(floorNum) { return floorNum % BOSS_FLOOR_INTERVAL === 0; }
 
@@ -614,6 +773,7 @@
     else if (type === 'newbest') { freq = 784; dur = 0.3; wave = 'triangle'; peak = 0.1; }
     else if (type === 'purchase') { freq = 900; dur = 0.1; wave = 'sine'; peak = 0.07; }
     else if (type === 'summon') { freq = 160; dur = 0.2; wave = 'sawtooth'; peak = 0.09; }
+    else if (type === 'levelup') { freq = 660; dur = 0.35; wave = 'triangle'; peak = 0.12; }
     try {
       var osc = ac.createOscillator();
       var gain = ac.createGain();
@@ -765,7 +925,9 @@
       floor: 1,
       player: {
         x: 0, y: 0, hp: 20, maxHp: 20, atk: 3, kills: 0, gold: 0,
-        mp: 0, maxMp: 10, facing: 'down', hasFireball: false, hasDash: false
+        mp: 0, maxMp: 10, facing: 'down', hasFireball: false, hasDash: false,
+        hasShot: false, shotBonus: 0,
+        level: 1, xp: 0, xpToNext: xpForLevel(1)
       },
       turns: 0,
       gameOver: false,
@@ -773,13 +935,18 @@
       message: '',
       log: [],
       merchant: null,
-      shopOpen: false
+      shopOpen: false,
+      levelUpOpen: false,
+      pendingLevelUps: 0,
+      guideOpen: false
     };
     logMsg('You descend into the torch-lit catacombs...');
     hideGameOver();
     hideToast();
     hideBossBanner();
     closeShop();
+    closeLevelUp();
+    closeGuide();
     loadFloor(1);
     updateBestHud();
     render();
@@ -845,6 +1012,57 @@
     if (best) lines.push('BEST  score ' + best.score + '   depth ' + best.depth + '   ' + best.kills + ' kills');
     if (stats.gamesPlayed > 0) lines.push(stats.gamesPlayed + ' games   deepest ' + stats.deepestFloor + '   ' + stats.totalKills + ' total kills');
     bestHudEl.textContent = lines.join('\n');
+  }
+
+  // ---- leveling ----
+
+  function gainXp(amount) {
+    state.player.xp += amount;
+    var leveled = false;
+    while (state.player.xp >= state.player.xpToNext) {
+      state.player.xp -= state.player.xpToNext;
+      state.player.level += 1;
+      state.player.xpToNext = xpForLevel(state.player.level);
+      state.pendingLevelUps += 1;
+      leveled = true;
+    }
+    if (leveled) {
+      logMsg('Level up! You are now level ' + state.player.level + '.');
+      playSound('levelup');
+    }
+    if (state.pendingLevelUps > 0 && !state.levelUpOpen) {
+      openLevelUp();
+    }
+  }
+
+  function openLevelUp() {
+    state.levelUpOpen = true;
+    renderLevelUp();
+    levelUpEl.style.display = 'flex';
+  }
+
+  function closeLevelUp() {
+    if (state) state.levelUpOpen = false;
+    levelUpEl.style.display = 'none';
+  }
+
+  function chooseLevelUpOption(option) {
+    option.apply();
+    logMsg('You choose: ' + option.name + '.');
+    state.pendingLevelUps = Math.max(0, state.pendingLevelUps - 1);
+    closeLevelUp();
+    if (state.pendingLevelUps > 0) openLevelUp();
+  }
+
+  function renderLevelUp() {
+    var html = '<div class="lvl-title">LEVEL ' + state.player.level + '</div>' +
+      '<div class="lvl-sub">Choose a path to grow stronger</div>';
+    for (var i = 0; i < LEVEL_UP_OPTIONS.length; i++) {
+      var o = LEVEL_UP_OPTIONS[i];
+      html += '<button class="lvl-option" data-key="' + o.key + '">[' + o.key + '] ' + o.label() + '</button>';
+    }
+    html += '<div class="lvl-hint">Press a number or tap to choose</div>';
+    levelUpEl.innerHTML = html;
   }
 
   // ---- items ----
@@ -920,6 +1138,7 @@
       fxDeathBurst(enemy.x, enemy.y, enemy.isBoss ? enemy.bossColor : COLOR_ENEMY);
       logMsg(prefix + 'You slay the ' + enemy.name + '!');
       playSound('death');
+      gainXp((enemy.isBoss ? 30 : 6) + state.floor * 2);
     } else {
       logMsg(prefix + 'You strike the ' + enemy.name + ' (' + enemy.hp + '/' + enemy.maxHp + ' hp).');
       playSound(isCrit ? 'crit' : 'hit');
@@ -1035,7 +1254,9 @@
 
   // ---- player turn / abilities ----
 
-  function canAct() { return !!state && !state.gameOver && !state.shopOpen; }
+  function canAct() {
+    return !!state && !state.gameOver && !state.shopOpen && !state.levelUpOpen && !state.guideOpen;
+  }
 
   function setFacing(dx, dy) {
     if (dx > 0) state.player.facing = 'right';
@@ -1124,6 +1345,30 @@
       setTimeout(step, 35);
     }
     step();
+  }
+
+  function useShot() {
+    if (!canAct() || !state.player.hasShot) return;
+    var d = FACING_DELTA[state.player.facing];
+    var x = state.player.x, y = state.player.y;
+    var hitEnemy = null;
+    var steps = 0;
+    while (steps < SHOT_RANGE) {
+      var nx = x + d.dx, ny = y + d.dy;
+      if (!isWalkable(nx, ny)) break;
+      x = nx; y = ny;
+      steps++;
+      var e = enemyAt(x, y);
+      if (e) { hitEnemy = e; break; }
+    }
+    fxSpawnProjectile(state.player.x, state.player.y, x, y, '#cfe8ff', 140);
+    playSound('cast');
+    if (hitEnemy) {
+      attackEnemy(hitEnemy, state.player.atk + state.player.shotBonus);
+    } else {
+      logMsg('Your shot flies wide.');
+    }
+    endPlayerTurn();
   }
 
   function useFireball() {
@@ -1218,6 +1463,51 @@
     }
     html += '<div class="shop-hint">Press a number to buy, ESC or tap outside to leave</div>';
     shopEl.innerHTML = html;
+  }
+
+  // ---- guide ----
+
+  function guideRow(key, desc) {
+    return '<div class="guide-row"><span class="guide-key">' + key + '</span><span>' + desc + '</span></div>';
+  }
+
+  function renderGuide() {
+    guideEl.innerHTML =
+      '<div class="guide-panel">' +
+      '<div class="guide-title">HOW TO PLAY</div>' +
+      '<h3>MOVEMENT</h3>' +
+      guideRow('Arrows / WASD', 'move') +
+      guideRow('Q / E / Z / C', 'diagonal move') +
+      guideRow('Shift + direction', 'run until something interesting') +
+      guideRow('. or center d-pad', 'wait a turn') +
+      '<h3>COMBAT</h3>' +
+      guideRow('walk into enemy', 'melee attack') +
+      guideRow('R', 'Ranged Shot (unlock via Ranger Path level-up)') +
+      guideRow('F', 'Fireball (unlock via tome item or Arcane Path)') +
+      guideRow('Space', 'Dash (unlock via boots item)') +
+      '<h3>PROGRESSION</h3>' +
+      guideRow('kill enemies', 'gain XP, level up, choose a perk') +
+      guideRow('walk into M', 'open the wandering merchant\'s shop') +
+      guideRow('walk into &gt;', 'descend (bosses must be defeated first)') +
+      '<h3>LEGEND</h3>' +
+      guideRow('@ / B', 'you / a boss') +
+      guideRow('g r w o b k', 'goblin, rat, wraith, orc, bat, skeleton') +
+      guideRow('! / [ / /', 'potion / shield / sword') +
+      guideRow('$ / ? / =', 'gold / tome / boots') +
+      guideRow('M', 'wandering merchant') +
+      '<button class="guide-close">[close]</button>' +
+      '</div>';
+  }
+
+  function openGuide() {
+    state.guideOpen = true;
+    renderGuide();
+    guideEl.style.display = 'flex';
+  }
+
+  function closeGuide() {
+    if (state) state.guideOpen = false;
+    guideEl.style.display = 'none';
   }
 
   // ---- camera / rendering ----
@@ -1410,6 +1700,7 @@
     hudEl.textContent =
       'HP ' + state.player.hp + '/' + state.player.maxHp +
       '   MP ' + state.player.mp + '/' + state.player.maxMp +
+      '   LV ' + state.player.level + ' (' + state.player.xp + '/' + state.player.xpToNext + ' xp)' +
       '   DEPTH ' + state.floor +
       '   KILLS ' + state.player.kills +
       '   GOLD ' + state.player.gold +
@@ -1418,6 +1709,7 @@
 
   function updateAbilityButtons() {
     if (!state) return;
+    btnShotEl.classList.toggle('ability-locked', !state.player.hasShot);
     btnFireEl.classList.toggle('ability-locked', !state.player.hasFireball);
     btnDashEl.classList.toggle('ability-locked', !state.player.hasDash);
   }
@@ -1430,7 +1722,7 @@
     gameOverEl.innerHTML =
       '<div class="go-title">YOU HAVE FALLEN</div>' +
       '<div>Slain by a ' + state.deathCause + ' at depth ' + state.floor + '</div>' +
-      '<div>Kills: ' + state.player.kills + '   Gold: ' + state.player.gold + '   Turns: ' + state.turns + '</div>' +
+      '<div>Level ' + state.player.level + '   Kills: ' + state.player.kills + '   Gold: ' + state.player.gold + '   Turns: ' + state.turns + '</div>' +
       '<div>Score: ' + score + (isNewBest ? '  <span class="go-newbest">NEW BEST!</span>' : '') + '</div>' +
       bestLine +
       '<div class="go-hint">Press ENTER, SPACE, or tap to descend again</div>';
@@ -1477,11 +1769,38 @@
       }
       return;
     }
+    if (state && state.guideOpen) {
+      if (e.key === 'Escape' || e.key === '?') {
+        e.preventDefault();
+        closeGuide();
+      }
+      return;
+    }
+    if (state && state.levelUpOpen) {
+      for (var li = 0; li < LEVEL_UP_OPTIONS.length; li++) {
+        if (LEVEL_UP_OPTIONS[li].key === e.key) {
+          e.preventDefault();
+          chooseLevelUpOption(LEVEL_UP_OPTIONS[li]);
+          return;
+        }
+      }
+      return;
+    }
     if (state && state.shopOpen) {
       if (e.key === 'Escape') { e.preventDefault(); closeShop(); return; }
       for (var oi = 0; oi < SHOP_OFFERS.length; oi++) {
         if (SHOP_OFFERS[oi].key === e.key) { e.preventDefault(); buyOffer(SHOP_OFFERS[oi]); return; }
       }
+      return;
+    }
+    if (e.key === '?') {
+      e.preventDefault();
+      openGuide();
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      useShot();
       return;
     }
     if (e.key === 'f' || e.key === 'F') {
@@ -1531,7 +1850,8 @@
     var btn = e.target.closest('button');
     if (!btn) return;
     if (state && state.gameOver) { newGame(); return; }
-    if (btn.dataset.ability === 'fireball') useFireball();
+    if (btn.dataset.ability === 'shot') useShot();
+    else if (btn.dataset.ability === 'fireball') useFireball();
     else if (btn.dataset.ability === 'dash') useDash();
   });
 
@@ -1548,6 +1868,23 @@
       return;
     }
     if (e.target === shopEl) closeShop();
+  });
+
+  levelUpEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('button.lvl-option');
+    if (!btn) return;
+    for (var i = 0; i < LEVEL_UP_OPTIONS.length; i++) {
+      if (LEVEL_UP_OPTIONS[i].key === btn.dataset.key) { chooseLevelUpOption(LEVEL_UP_OPTIONS[i]); return; }
+    }
+  });
+
+  guideEl.addEventListener('click', function (e) {
+    if (e.target === guideEl || e.target.closest('button.guide-close')) closeGuide();
+  });
+
+  guideBtnEl.addEventListener('click', function () {
+    if (!state || state.gameOver || state.shopOpen || state.levelUpOpen) return;
+    if (state.guideOpen) closeGuide(); else openGuide();
   });
 
   function resizeCanvas() {
