@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "steven mettler ~ skullbreaker",
+  title: "steven mettler ~ freefall",
 };
 
-export default function SkullbreakerPage() {
+export default function FreefallPage() {
   return (
     <iframe
-      src="/games/skullbreaker.html"
-      title="Skullbreaker"
+      src="/games/freefall.html"
+      title="Freefall"
       style={{
         position: "fixed",
         inset: 0,

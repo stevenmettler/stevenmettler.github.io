@@ -98,8 +98,8 @@ export default async function Home() {
             GAMES
           </div>
           <div className="sm-section-content sm-games-content">
-            <Link href="/games/skullbreaker">skullbreaker</Link> &mdash; a
-            small game about breaking skulls
+            <Link href="/games/freefall">freefall</Link> &mdash; a small
+            game about dodging obstacles
             <br />
             <Link href="/games/catacombs">catacombs</Link> &mdash; a tiny
             roguelike dungeon crawl
