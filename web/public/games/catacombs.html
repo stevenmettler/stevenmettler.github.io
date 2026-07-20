@@ -35,9 +35,11 @@
     font-family: 'Courier New', Courier, monospace;
     color: #7a6a1f;
     font-size: 13px;
+    line-height: 1.4;
     text-align: right;
     text-shadow: 0 0 4px rgba(255, 213, 74, 0.4);
     pointer-events: none;
+    white-space: pre-line;
   }
 
   #gameOver {
@@ -97,6 +99,7 @@
   .dpad-left { grid-column: 1; grid-row: 2; }
   .dpad-right { grid-column: 3; grid-row: 2; }
   .dpad-down { grid-column: 2; grid-row: 3; }
+  .dpad-wait { grid-column: 2; grid-row: 2; font-size: 26px; opacity: 0.7; }
 
   #abilities {
     position: fixed;
@@ -164,6 +167,44 @@
     text-align: center;
   }
   #bossBanner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+  #shop {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 11;
+    font-family: 'Courier New', Courier, monospace;
+    color: #7dd3ff;
+    text-align: center;
+    padding: 20px;
+  }
+  #shop .shop-title {
+    font-size: 22px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 8px rgba(125, 211, 255, 0.7);
+  }
+  #shop .shop-gold { margin-bottom: 14px; opacity: 0.85; }
+  #shop .shop-offer {
+    display: block;
+    width: 280px;
+    margin: 6px auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    background: rgba(125, 211, 255, 0.12);
+    border: 1px solid #7dd3ff;
+    color: #7dd3ff;
+    padding: 8px 10px;
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+  }
+  #shop .shop-offer:active { background: rgba(125, 211, 255, 0.3); }
+  #shop .shop-offer:disabled { opacity: 0.35; cursor: default; border-color: #2a3a45; color: #4a6a78; }
+  #shop .shop-hint { margin-top: 14px; opacity: 0.7; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -173,6 +214,7 @@
 <div id="dpad">
   <button class="dpad-up" data-dx="0" data-dy="-1">&uarr;</button>
   <button class="dpad-left" data-dx="-1" data-dy="0">&larr;</button>
+  <button class="dpad-wait" data-action="wait">&middot;</button>
   <button class="dpad-right" data-dx="1" data-dy="0">&rarr;</button>
   <button class="dpad-down" data-dx="0" data-dy="1">&darr;</button>
 </div>
@@ -183,6 +225,7 @@
 <div id="toast"></div>
 <div id="bossBanner"></div>
 <div id="gameOver"></div>
+<div id="shop"></div>
 
 <script>
 (function () {
@@ -197,12 +240,17 @@
   var btnDashEl = document.getElementById('btnDash');
   var toastEl = document.getElementById('toast');
   var bossBannerEl = document.getElementById('bossBanner');
+  var shopEl = document.getElementById('shop');
   var BEST_KEY = 'catacombs_best_v1';
+  var STATS_KEY = 'catacombs_stats_v1';
 
   var TILE = 20;
   var VISION_RADIUS = 6;
+  var RANGED_RADIUS = 5;
   var MOVE_ANIM_MS = 130;
   var ABILITY_COST = { fireball: 4, dash: 2 };
+  var CRIT_CHANCE = 0.15;
+  var CRIT_MULT = 1.75;
 
   var COLOR_BG = '#020402';
   var COLOR_PLAYER = '#eafbea';
@@ -213,13 +261,15 @@
   var COLOR_FLOOR_DIM = '#12240f';
   var COLOR_STAIRS_LIT = '#ffd54a';
   var COLOR_STAIRS_DIM = '#7a6a1f';
+  var COLOR_MERCHANT = '#7dd3ff';
 
   var MONSTER_TYPES = [
     { glyph: 'g', name: 'goblin' },
     { glyph: 'r', name: 'giant rat' },
     { glyph: 'w', name: 'wraith' },
     { glyph: 'o', name: 'orc brute' },
-    { glyph: 'b', name: 'cave bat' }
+    { glyph: 'b', name: 'cave bat' },
+    { glyph: 'k', name: 'skeleton archer', ranged: true }
   ];
 
   var BOSS_TYPES = [
@@ -245,6 +295,23 @@
     left: { dx: -1, dy: 0 },
     right: { dx: 1, dy: 0 }
   };
+
+  var SHOP_OFFERS = [
+    { key: '1', label: 'Heal to full', cost: 10, apply: function () {
+      state.player.hp = state.player.maxHp;
+    } },
+    { key: '2', label: 'Attack +1', cost: 25, apply: function () {
+      state.player.atk += 1;
+    } },
+    { key: '3', label: 'Max HP +5', cost: 20, apply: function () {
+      state.player.maxHp += 5;
+      state.player.hp += 5;
+    } },
+    { key: '4', label: 'Max MP +5', cost: 15, apply: function () {
+      state.player.maxMp += 5;
+      state.player.mp = Math.min(state.player.maxMp, state.player.mp + 5);
+    } }
+  ];
 
   var state = null;
   var _fxIdCounter = 0;
@@ -379,7 +446,7 @@
       enemies.push({
         x: ex, y: ey,
         hp: stats.hp, maxHp: stats.hp, atk: stats.atk,
-        alive: true, glyph: type.glyph, name: type.name,
+        alive: true, glyph: type.glyph, name: type.name, ranged: type.ranged || false,
         id: 'e' + (_fxIdCounter++)
       });
     }
@@ -391,7 +458,7 @@
         x: stairs.x, y: stairs.y,
         hp: bossStats.hp, maxHp: bossStats.hp, atk: bossStats.atk,
         alive: true, glyph: bossType.glyph, name: bossType.name,
-        isBoss: true, bossColor: bossType.color, powerAttackCounter: 0,
+        isBoss: true, bossColor: bossType.color, powerAttackCounter: 0, summoned: false,
         id: 'e' + (_fxIdCounter++)
       });
     }
@@ -423,7 +490,31 @@
       });
     }
 
-    return { grid: grid, W: W, H: H, rooms: rooms, start: start, stairs: stairs, enemies: enemies, items: items };
+    var merchant = null;
+    if (!isBossFloor(floorNum) && floorNum >= 2 && Math.random() < 0.5) {
+      var mAttempts = 0;
+      while (!merchant && mAttempts < 30) {
+        mAttempts++;
+        var mRoom = rooms[randInt(0, rooms.length - 1)];
+        var mx = randInt(mRoom.x, mRoom.x + mRoom.w - 1);
+        var my = randInt(mRoom.y, mRoom.y + mRoom.h - 1);
+        if (mx === start.x && my === start.y) continue;
+        if (mx === stairs.x && my === stairs.y) continue;
+        var mOccupied = false;
+        for (var q1 = 0; q1 < enemies.length; q1++) {
+          if (enemies[q1].x === mx && enemies[q1].y === my) { mOccupied = true; break; }
+        }
+        if (!mOccupied) {
+          for (var q2 = 0; q2 < items.length; q2++) {
+            if (items[q2].x === mx && items[q2].y === my) { mOccupied = true; break; }
+          }
+        }
+        if (mOccupied) continue;
+        merchant = { x: mx, y: my };
+      }
+    }
+
+    return { grid: grid, W: W, H: H, rooms: rooms, start: start, stairs: stairs, enemies: enemies, items: items, merchant: merchant };
   }
 
   function idx(x, y) { return y * state.W + x; }
@@ -451,6 +542,9 @@
       if (state.enemies[i].isBoss && state.enemies[i].alive) return state.enemies[i];
     }
     return null;
+  }
+  function isMerchantAt(x, y) {
+    return !!(state.merchant && state.merchant.x === x && state.merchant.y === y);
   }
 
   function hasLineOfSight(x0, y0, x1, y1) {
@@ -482,6 +576,58 @@
           state.discovered[i] = 1;
         }
       }
+    }
+  }
+
+  // ---- audio: procedural WebAudio blips, no external assets ----
+
+  var audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) {
+      try {
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        audioCtx = Ctor ? new Ctor() : null;
+      } catch (e) {
+        audioCtx = null;
+      }
+    }
+    return audioCtx;
+  }
+
+  function playSound(type) {
+    var ac = getAudioCtx();
+    if (!ac) return;
+    if (ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
+    var now = ac.currentTime;
+    var freq = 440, dur = 0.1, wave = 'square', peak = 0.08, sweep = false;
+    if (type === 'hit') { freq = 220; dur = 0.08; wave = 'square'; }
+    else if (type === 'crit') { freq = 320; dur = 0.14; wave = 'sawtooth'; peak = 0.12; }
+    else if (type === 'death') { freq = 90; dur = 0.3; wave = 'sawtooth'; peak = 0.14; sweep = true; }
+    else if (type === 'hurt') { freq = 140; dur = 0.15; wave = 'sawtooth'; peak = 0.12; }
+    else if (type === 'pickup') { freq = 660; dur = 0.09; wave = 'sine'; peak = 0.07; }
+    else if (type === 'unlock') { freq = 523; dur = 0.25; wave = 'triangle'; peak = 0.1; }
+    else if (type === 'descend') { freq = 200; dur = 0.35; wave = 'sine'; peak = 0.08; sweep = true; }
+    else if (type === 'cast') { freq = 500; dur = 0.15; wave = 'sawtooth'; peak = 0.09; }
+    else if (type === 'dash') { freq = 700; dur = 0.08; wave = 'square'; peak = 0.06; }
+    else if (type === 'boss') { freq = 80; dur = 0.6; wave = 'sawtooth'; peak = 0.16; sweep = true; }
+    else if (type === 'gameover') { freq = 130; dur = 0.5; wave = 'sawtooth'; peak = 0.14; sweep = true; }
+    else if (type === 'newbest') { freq = 784; dur = 0.3; wave = 'triangle'; peak = 0.1; }
+    else if (type === 'purchase') { freq = 900; dur = 0.1; wave = 'sine'; peak = 0.07; }
+    else if (type === 'summon') { freq = 160; dur = 0.2; wave = 'sawtooth'; peak = 0.09; }
+    try {
+      var osc = ac.createOscillator();
+      var gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = wave;
+      osc.frequency.setValueAtTime(freq, now);
+      if (sweep) osc.frequency.exponentialRampToValueAtTime(Math.max(30, freq * 0.45), now + dur);
+      gain.gain.setValueAtTime(peak, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.start(now);
+      osc.stop(now + dur + 0.02);
+    } catch (e) {
+      // audio graph failed for any reason - fail silently, sound is non-critical
     }
   }
 
@@ -584,6 +730,14 @@
     if (fx.shake.t < fx.shake.dur) fx.shake.t += dt;
   }
 
+  // ---- message log ----
+
+  function logMsg(text) {
+    state.message = text;
+    state.log.push(text);
+    if (state.log.length > 3) state.log.shift();
+  }
+
   // ---- floor / game lifecycle ----
 
   function loadFloor(floorNum) {
@@ -594,10 +748,12 @@
     state.H = f.H;
     state.enemies = f.enemies;
     state.items = f.items;
+    state.merchant = f.merchant;
     state.visible = new Uint8Array(f.W * f.H);
     state.discovered = new Uint8Array(f.W * f.H);
     state.player.x = f.start.x;
     state.player.y = f.start.y;
+    closeShop();
     fxReset();
     computeVisibility();
     var boss = findBoss();
@@ -614,11 +770,16 @@
       turns: 0,
       gameOver: false,
       deathCause: '',
-      message: 'You descend into the torch-lit catacombs...'
+      message: '',
+      log: [],
+      merchant: null,
+      shopOpen: false
     };
+    logMsg('You descend into the torch-lit catacombs...');
     hideGameOver();
     hideToast();
     hideBossBanner();
+    closeShop();
     loadFloor(1);
     updateBestHud();
     render();
@@ -646,15 +807,44 @@
     }
   }
 
+  function loadStats() {
+    var fallback = { gamesPlayed: 0, totalKills: 0, deepestFloor: 0 };
+    try {
+      if (typeof localStorage === 'undefined') return fallback;
+      var raw = localStorage.getItem(STATS_KEY);
+      if (!raw) return fallback;
+      var parsed = JSON.parse(raw);
+      if (!parsed) return fallback;
+      return {
+        gamesPlayed: parsed.gamesPlayed || 0,
+        totalKills: parsed.totalKills || 0,
+        deepestFloor: parsed.deepestFloor || 0
+      };
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function saveStats(stats) {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    } catch (e) {
+      // localStorage unavailable - skip persistence
+    }
+  }
+
   function computeScore(s) {
     return s.floor * 100 + s.player.kills * 10 + s.player.gold;
   }
 
   function updateBestHud() {
     var best = loadBest();
-    bestHudEl.textContent = best
-      ? 'BEST  score ' + best.score + '   depth ' + best.depth + '   ' + best.kills + ' kills'
-      : '';
+    var stats = loadStats();
+    var lines = [];
+    if (best) lines.push('BEST  score ' + best.score + '   depth ' + best.depth + '   ' + best.kills + ' kills');
+    if (stats.gamesPlayed > 0) lines.push(stats.gamesPlayed + ' games   deepest ' + stats.deepestFloor + '   ' + stats.totalKills + ' total kills');
+    bestHudEl.textContent = lines.join('\n');
   }
 
   // ---- items ----
@@ -664,42 +854,50 @@
     if (item.type === 'potion') {
       var healed = Math.min(8, state.player.maxHp - state.player.hp);
       state.player.hp = Math.min(state.player.maxHp, state.player.hp + 8);
-      state.message = 'You drink a potion. (+' + healed + ' HP)';
+      logMsg('You drink a potion. (+' + healed + ' HP)');
       fxSpawnFloatingText(item.x, item.y, '+' + healed + ' HP', '#ff6b81');
+      playSound('pickup');
     } else if (item.type === 'sword') {
       state.player.atk += 1;
-      state.message = 'You find a rusty sword. Attack +1! (atk ' + state.player.atk + ')';
+      logMsg('You find a rusty sword. Attack +1! (atk ' + state.player.atk + ')');
       fxSpawnFloatingText(item.x, item.y, 'ATK+1', '#cfd8dc');
+      playSound('pickup');
     } else if (item.type === 'shield') {
       state.player.maxHp += 5;
       state.player.hp += 5;
-      state.message = 'You find a shield. Max HP +5! (' + state.player.maxHp + ' max hp)';
+      logMsg('You find a shield. Max HP +5! (' + state.player.maxHp + ' max hp)');
       fxSpawnFloatingText(item.x, item.y, 'HP+5', '#9fd8ff');
+      playSound('pickup');
     } else if (item.type === 'gold') {
       state.player.gold += item.amount;
-      state.message = 'You find ' + item.amount + ' gold.';
+      logMsg('You find ' + item.amount + ' gold.');
       fxSpawnFloatingText(item.x, item.y, '+' + item.amount + 'g', '#fff176');
+      playSound('pickup');
     } else if (item.type === 'tome') {
       if (!state.player.hasFireball) {
         state.player.hasFireball = true;
-        state.message = 'You learn to cast Fireball! (press F)';
+        logMsg('You learn to cast Fireball! (press F)');
         showToast('FIREBALL UNLOCKED');
+        playSound('unlock');
       } else {
         state.player.maxMp += 3;
         state.player.mp = Math.min(state.player.maxMp, state.player.mp + 3);
-        state.message = 'The tome resonates. Max MP +3! (' + state.player.maxMp + ')';
+        logMsg('The tome resonates. Max MP +3! (' + state.player.maxMp + ')');
         fxSpawnFloatingText(item.x, item.y, 'MP+3', '#c77dff');
+        playSound('pickup');
       }
     } else if (item.type === 'boots') {
       if (!state.player.hasDash) {
         state.player.hasDash = true;
-        state.message = 'You learn to Dash! (press SPACE)';
+        logMsg('You learn to Dash! (press SPACE)');
         showToast('DASH UNLOCKED');
+        playSound('unlock');
       } else {
         state.player.maxMp += 3;
         state.player.mp = Math.min(state.player.maxMp, state.player.mp + 3);
-        state.message = 'The boots hum with energy. Max MP +3! (' + state.player.maxMp + ')';
+        logMsg('The boots hum with energy. Max MP +3! (' + state.player.maxMp + ')');
         fxSpawnFloatingText(item.x, item.y, 'MP+3', '#7dd3ff');
+        playSound('pickup');
       }
     }
   }
@@ -707,18 +905,24 @@
   // ---- combat ----
 
   function attackEnemy(enemy, dmg) {
-    var amount = dmg || state.player.atk;
+    var base = dmg || state.player.atk;
+    var isCrit = Math.random() < CRIT_CHANCE;
+    var amount = isCrit ? Math.round(base * CRIT_MULT) : base;
     enemy.hp -= amount;
     fxHitFlash(enemy.id);
-    fxSpawnFloatingText(enemy.x, enemy.y, '-' + amount, '#ffe066');
+    fxSpawnFloatingText(enemy.x, enemy.y, (isCrit ? 'CRIT -' : '-') + amount, isCrit ? '#ff3b3b' : '#ffe066');
+    if (isCrit) fxScreenShake(5, 150);
+    var prefix = isCrit ? 'Critical hit! ' : '';
     if (enemy.hp <= 0) {
       enemy.hp = 0;
       enemy.alive = false;
       state.player.kills++;
       fxDeathBurst(enemy.x, enemy.y, enemy.isBoss ? enemy.bossColor : COLOR_ENEMY);
-      state.message = 'You slay the ' + enemy.name + '!';
+      logMsg(prefix + 'You slay the ' + enemy.name + '!');
+      playSound('death');
     } else {
-      state.message = 'You strike the ' + enemy.name + ' (' + enemy.hp + '/' + enemy.maxHp + ' hp).';
+      logMsg(prefix + 'You strike the ' + enemy.name + ' (' + enemy.hp + '/' + enemy.maxHp + ' hp).');
+      playSound(isCrit ? 'crit' : 'hit');
     }
   }
 
@@ -732,7 +936,8 @@
       state.player.hp = 0;
       endGame(enemy.name);
     } else {
-      state.message = 'The ' + enemy.name + ' hits you! (' + state.player.hp + '/' + state.player.maxHp + ' hp)';
+      logMsg('The ' + enemy.name + ' hits you! (' + state.player.hp + '/' + state.player.maxHp + ' hp)');
+      playSound('hurt');
     }
   }
 
@@ -746,19 +951,47 @@
       best = { score: score, depth: state.floor, kills: state.player.kills, gold: state.player.gold, turns: state.turns };
       saveBest(best);
     }
+    var stats = loadStats();
+    stats.gamesPlayed += 1;
+    stats.totalKills += state.player.kills;
+    stats.deepestFloor = Math.max(stats.deepestFloor, state.floor);
+    saveStats(stats);
     showGameOver(score, best, isNewBest);
     updateBestHud();
+    playSound(isNewBest ? 'newbest' : 'gameover');
   }
 
   function checkStairs() {
     if (state.grid[idx(state.player.x, state.player.y)] === 2) {
       var boss = findBoss();
       if (boss) {
-        state.message = 'The ' + boss.name + ' blocks your path - defeat it first!';
+        logMsg('The ' + boss.name + ' blocks your path - defeat it first!');
         return;
       }
-      state.message = 'You descend deeper into the catacombs...';
+      logMsg('You descend deeper into the catacombs...');
+      playSound('descend');
       loadFloor(state.floor + 1);
+    }
+  }
+
+  function summonMinion(boss) {
+    var spots = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+    for (var i = 0; i < spots.length; i++) {
+      var sx = boss.x + spots[i][0], sy = boss.y + spots[i][1];
+      if (isWalkable(sx, sy) && !enemyAt(sx, sy) && !isMerchantAt(sx, sy)) {
+        var stats = enemyStatsForFloor(state.floor);
+        state.enemies.push({
+          x: sx, y: sy,
+          hp: Math.max(2, Math.round(stats.hp * 0.6)), maxHp: Math.max(2, Math.round(stats.hp * 0.6)),
+          atk: Math.max(1, Math.round(stats.atk * 0.6)),
+          alive: true, glyph: 'k', name: 'summoned skeleton', ranged: false,
+          id: 'e' + (_fxIdCounter++)
+        });
+        logMsg('The ' + boss.name + ' summons a skeleton!');
+        fxDeathBurst(sx, sy, boss.bossColor);
+        playSound('summon');
+        return;
+      }
     }
   }
 
@@ -771,6 +1004,11 @@
       if (dist2 > VISION_RADIUS * VISION_RADIUS) continue;
       if (!hasLineOfSight(e.x, e.y, state.player.x, state.player.y)) continue;
 
+      if (e.isBoss && e.name === 'Crypt Warden' && !e.summoned) {
+        e.summoned = true;
+        summonMinion(e);
+      }
+
       var dx = dx0 === 0 ? 0 : (dx0 > 0 ? 1 : -1);
       var dy = dy0 === 0 ? 0 : (dy0 > 0 ? 1 : -1);
       var tx = e.x + dx, ty = e.y + dy;
@@ -782,11 +1020,14 @@
         } else {
           attackPlayer(e);
         }
-      } else if (isWalkable(tx, ty) && !enemyAt(tx, ty)) {
+      } else if (e.ranged && dist2 <= RANGED_RADIUS * RANGED_RADIUS) {
+        fxSpawnProjectile(e.x, e.y, state.player.x, state.player.y, '#c9c9c9', 220);
+        attackPlayer(e);
+      } else if (isWalkable(tx, ty) && !enemyAt(tx, ty) && !isMerchantAt(tx, ty)) {
         e.x = tx; e.y = ty;
-      } else if (dx !== 0 && isWalkable(e.x + dx, e.y) && !enemyAt(e.x + dx, e.y)) {
+      } else if (dx !== 0 && isWalkable(e.x + dx, e.y) && !enemyAt(e.x + dx, e.y) && !isMerchantAt(e.x + dx, e.y)) {
         e.x += dx;
-      } else if (dy !== 0 && isWalkable(e.x, e.y + dy) && !enemyAt(e.x, e.y + dy)) {
+      } else if (dy !== 0 && isWalkable(e.x, e.y + dy) && !enemyAt(e.x, e.y + dy) && !isMerchantAt(e.x, e.y + dy)) {
         e.y += dy;
       }
     }
@@ -794,7 +1035,7 @@
 
   // ---- player turn / abilities ----
 
-  function canAct() { return !!state && !state.gameOver; }
+  function canAct() { return !!state && !state.gameOver && !state.shopOpen; }
 
   function setFacing(dx, dy) {
     if (dx > 0) state.player.facing = 'right';
@@ -813,11 +1054,20 @@
 
   function tryMovePlayer(dx, dy) {
     if (!canAct()) return;
+    if (dx !== 0 && dy !== 0) {
+      // block cutting diagonally through a wall corner - both orthogonal cells must be open
+      if (!isWalkable(state.player.x + dx, state.player.y) || !isWalkable(state.player.x, state.player.y + dy)) {
+        return;
+      }
+    }
     setFacing(dx, dy);
     var nx = state.player.x + dx, ny = state.player.y + dy;
     var target = enemyAt(nx, ny);
     if (target) {
       attackEnemy(target);
+    } else if (isMerchantAt(nx, ny)) {
+      openShop();
+      return; // browsing the shop doesn't consume a turn
     } else if (isWalkable(nx, ny)) {
       state.player.x = nx;
       state.player.y = ny;
@@ -829,13 +1079,61 @@
     endPlayerTurn();
   }
 
+  function waitTurn() {
+    if (!canAct()) return;
+    logMsg('You wait.');
+    endPlayerTurn();
+  }
+
+  function anyVisibleEnemy() {
+    for (var i = 0; i < state.enemies.length; i++) {
+      var e = state.enemies[i];
+      if (e.alive && state.visible[idx(e.x, e.y)]) return true;
+    }
+    return false;
+  }
+
+  function isJunctionAhead(dx, dy) {
+    var px = dy !== 0 ? 1 : 0, py = dx !== 0 ? 1 : 0;
+    var leftOpen = isWalkable(state.player.x + px, state.player.y + py);
+    var rightOpen = isWalkable(state.player.x - px, state.player.y - py);
+    return leftOpen || rightOpen;
+  }
+
+  var runToken = 0;
+  function runInDirection(dx, dy) {
+    if (!canAct()) return;
+    var myToken = ++runToken;
+    var steps = 0, maxSteps = 40;
+    function step() {
+      if (myToken !== runToken) return;
+      if (!canAct() || steps >= maxSteps) return;
+      if (anyVisibleEnemy()) return;
+      var nx = state.player.x + dx, ny = state.player.y + dy;
+      if (!isWalkable(nx, ny) || enemyAt(nx, ny)) return;
+      var isItem = !!itemAt(nx, ny);
+      var floorBefore = state.floor;
+      var hpBefore = state.player.hp;
+      tryMovePlayer(dx, dy);
+      steps++;
+      if (myToken !== runToken || state.gameOver) return;
+      if (state.floor !== floorBefore) return;
+      if (state.player.hp < hpBefore) return;
+      if (isItem) return;
+      if (isJunctionAhead(dx, dy)) return;
+      setTimeout(step, 35);
+    }
+    step();
+  }
+
   function useFireball() {
     if (!canAct() || !state.player.hasFireball) return;
     if (state.player.mp < ABILITY_COST.fireball) {
-      state.message = 'Not enough MP to cast Fireball.';
+      logMsg('Not enough MP to cast Fireball.');
       return;
     }
     state.player.mp -= ABILITY_COST.fireball;
+    playSound('cast');
     var d = FACING_DELTA[state.player.facing];
     var x = state.player.x, y = state.player.y;
     var hitEnemy = null;
@@ -853,7 +1151,7 @@
     if (hitEnemy) {
       attackEnemy(hitEnemy, state.player.atk * 2);
     } else {
-      state.message = 'Your fireball fizzles against the wall.';
+      logMsg('Your fireball fizzles against the wall.');
     }
     endPlayerTurn();
   }
@@ -861,24 +1159,65 @@
   function useDash() {
     if (!canAct() || !state.player.hasDash) return;
     if (state.player.mp < ABILITY_COST.dash) {
-      state.message = 'Not enough MP to Dash.';
+      logMsg('Not enough MP to Dash.');
       return;
     }
     var d = FACING_DELTA[state.player.facing];
     var midX = state.player.x + d.dx, midY = state.player.y + d.dy;
     var destX = state.player.x + d.dx * 2, destY = state.player.y + d.dy * 2;
-    if (!isWalkable(midX, midY) || enemyAt(midX, midY) || !isWalkable(destX, destY) || enemyAt(destX, destY)) {
-      state.message = 'Not enough room to dash.';
+    if (!isWalkable(midX, midY) || enemyAt(midX, midY) || isMerchantAt(midX, midY) ||
+        !isWalkable(destX, destY) || enemyAt(destX, destY) || isMerchantAt(destX, destY)) {
+      logMsg('Not enough room to dash.');
       return;
     }
     state.player.mp -= ABILITY_COST.dash;
+    playSound('dash');
     fxDashTrail(state.player.x, state.player.y, destX, destY);
     state.player.x = destX;
     state.player.y = destY;
     var item = itemAt(destX, destY);
     if (item) pickupItem(item);
-    state.message = 'You dash forward!';
+    logMsg('You dash forward!');
     endPlayerTurn();
+  }
+
+  // ---- shop ----
+
+  function openShop() {
+    state.shopOpen = true;
+    renderShop();
+    shopEl.style.display = 'flex';
+  }
+
+  function closeShop() {
+    if (state) state.shopOpen = false;
+    shopEl.style.display = 'none';
+  }
+
+  function buyOffer(offer) {
+    if (state.player.gold < offer.cost) {
+      logMsg('Not enough gold for that.');
+      renderShop();
+      return;
+    }
+    state.player.gold -= offer.cost;
+    offer.apply();
+    logMsg('You buy: ' + offer.label + '.');
+    playSound('purchase');
+    renderShop();
+  }
+
+  function renderShop() {
+    var html = '<div class="shop-title">WANDERING MERCHANT</div>' +
+      '<div class="shop-gold">Your gold: ' + state.player.gold + '</div>';
+    for (var i = 0; i < SHOP_OFFERS.length; i++) {
+      var o = SHOP_OFFERS[i];
+      var afford = state.player.gold >= o.cost;
+      html += '<button class="shop-offer" data-key="' + o.key + '"' + (afford ? '' : ' disabled') + '>' +
+        '[' + o.key + '] ' + o.label + ' — ' + o.cost + 'g</button>';
+    }
+    html += '<div class="shop-hint">Press a number to buy, ESC or tap outside to leave</div>';
+    shopEl.innerHTML = html;
   }
 
   // ---- camera / rendering ----
@@ -964,6 +1303,42 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
+  function drawMinimap() {
+    if (!state) return;
+    var boxW = 160, boxH = 80;
+    var boxX = canvas.width - boxW - 10, boxY = 62;
+    var scale = Math.min(boxW / state.W, boxH / state.H);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(76,175,80,0.4)';
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+    var offX = boxX + (boxW - state.W * scale) / 2;
+    var offY = boxY + (boxH - state.H * scale) / 2;
+    var cell = Math.max(1, scale);
+    for (var y = 0; y < state.H; y++) {
+      for (var x = 0; x < state.W; x++) {
+        var i = idx(x, y);
+        if (!state.discovered[i]) continue;
+        var tile = state.grid[i];
+        if (tile === 0) continue;
+        var visible = !!state.visible[i];
+        ctx.fillStyle = tile === 2 ? '#ffd54a' : (visible ? '#3fae44' : '#1c3a1e');
+        ctx.fillRect(offX + x * scale, offY + y * scale, cell, cell);
+      }
+    }
+    var boss = findBoss();
+    if (boss && state.discovered[idx(boss.x, boss.y)]) {
+      ctx.fillStyle = boss.bossColor;
+      ctx.fillRect(offX + boss.x * scale - 1, offY + boss.y * scale - 1, 3, 3);
+    }
+    if (state.merchant && state.discovered[idx(state.merchant.x, state.merchant.y)]) {
+      ctx.fillStyle = COLOR_MERCHANT;
+      ctx.fillRect(offX + state.merchant.x * scale - 1, offY + state.merchant.y * scale - 1, 3, 3);
+    }
+    ctx.fillStyle = '#eafbea';
+    ctx.fillRect(offX + state.player.x * scale - 1, offY + state.player.y * scale - 1, 3, 3);
+  }
+
   function render() {
     ctx.save();
     var shakeX = 0, shakeY = 0;
@@ -995,6 +1370,15 @@
       }
     }
 
+    if (state.merchant) {
+      var mIdx = idx(state.merchant.x, state.merchant.y);
+      if (state.visible[mIdx]) {
+        var mpx = (state.merchant.x - cam.camX) * TILE, mpy = (state.merchant.y - cam.camY) * TILE;
+        ctx.fillStyle = COLOR_MERCHANT;
+        ctx.fillText('M', mpx, mpy);
+      }
+    }
+
     for (var ei = 0; ei < state.enemies.length; ei++) {
       var en = state.enemies[ei];
       if (!en.alive) continue;
@@ -1017,6 +1401,7 @@
     drawVignette();
 
     ctx.restore();
+    drawMinimap();
     updateHUD();
     updateAbilityButtons();
   }
@@ -1028,7 +1413,7 @@
       '   DEPTH ' + state.floor +
       '   KILLS ' + state.player.kills +
       '   GOLD ' + state.player.gold +
-      '\n' + (state.message || '');
+      '\n' + state.log.join('\n');
   }
 
   function updateAbilityButtons() {
@@ -1073,6 +1458,7 @@
     bossBannerEl.textContent = name.toUpperCase() + ' AWAKENS';
     bossBannerEl.classList.add('show');
     fxScreenShake(10, 500);
+    playSound('boss');
     if (bossBannerTimer) clearTimeout(bossBannerTimer);
     bossBannerTimer = setTimeout(hideBossBanner, 2600);
   }
@@ -1091,6 +1477,13 @@
       }
       return;
     }
+    if (state && state.shopOpen) {
+      if (e.key === 'Escape') { e.preventDefault(); closeShop(); return; }
+      for (var oi = 0; oi < SHOP_OFFERS.length; oi++) {
+        if (SHOP_OFFERS[oi].key === e.key) { e.preventDefault(); buyOffer(SHOP_OFFERS[oi]); return; }
+      }
+      return;
+    }
     if (e.key === 'f' || e.key === 'F') {
       e.preventDefault();
       useFireball();
@@ -1101,15 +1494,28 @@
       useDash();
       return;
     }
+    if (e.key === '.') {
+      e.preventDefault();
+      waitTurn();
+      return;
+    }
     var map = {
       ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
       w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0],
-      W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0]
+      W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0],
+      q: [-1, -1], Q: [-1, -1],
+      e: [1, -1], E: [1, -1],
+      z: [-1, 1], Z: [-1, 1],
+      c: [1, 1], C: [1, 1]
     };
     var dir = map[e.key];
     if (dir) {
       e.preventDefault();
-      tryMovePlayer(dir[0], dir[1]);
+      if (e.shiftKey && (dir[0] === 0 || dir[1] === 0)) {
+        runInDirection(dir[0], dir[1]);
+      } else {
+        tryMovePlayer(dir[0], dir[1]);
+      }
     }
   });
 
@@ -1117,6 +1523,7 @@
     var btn = e.target.closest('button');
     if (!btn) return;
     if (state && state.gameOver) { newGame(); return; }
+    if (btn.dataset.action === 'wait') { waitTurn(); return; }
     tryMovePlayer(parseInt(btn.dataset.dx, 10), parseInt(btn.dataset.dy, 10));
   });
 
@@ -1130,6 +1537,17 @@
 
   gameOverEl.addEventListener('click', function () {
     newGame();
+  });
+
+  shopEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('button.shop-offer');
+    if (btn) {
+      for (var i = 0; i < SHOP_OFFERS.length; i++) {
+        if (SHOP_OFFERS[i].key === btn.dataset.key) { buyOffer(SHOP_OFFERS[i]); return; }
+      }
+      return;
+    }
+    if (e.target === shopEl) closeShop();
   });
 
   function resizeCanvas() {
