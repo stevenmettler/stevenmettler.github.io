@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { auth, isOwnerSession } from "@/auth";
 
 export default async function AdminLayout({
   children,
@@ -8,7 +8,7 @@ export default async function AdminLayout({
 }) {
   const session = await auth();
 
-  if (!session) {
+  if (!isOwnerSession(session)) {
     redirect("/api/auth/signin?callbackUrl=/admin");
   }
 

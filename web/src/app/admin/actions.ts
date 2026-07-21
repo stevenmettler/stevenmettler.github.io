@@ -2,7 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
+import { auth, isOwnerSession, signOut } from "@/auth";
 import { db } from "@/db";
 import { posts } from "@/db/schema";
 
@@ -16,7 +16,7 @@ function slugify(value: string): string {
 
 export async function requireAdmin() {
   const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  if (!isOwnerSession(session)) throw new Error("Unauthorized");
 }
 
 export async function createPost(formData: FormData) {

@@ -243,6 +243,100 @@
   #levelUp .lvl-option:active { background: rgba(255, 213, 74, 0.3); }
   #levelUp .lvl-hint { margin-top: 14px; opacity: 0.7; font-size: 12px; }
 
+  #meta {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 12;
+    font-family: 'Courier New', Courier, monospace;
+    color: #d9a7ff;
+    text-align: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+  #meta .meta-title {
+    font-size: 22px;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 8px rgba(199, 125, 255, 0.7);
+  }
+  #meta .meta-account { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
+  #meta .meta-bones { font-size: 15px; margin-bottom: 12px; color: #f2e6ff; }
+  #meta .meta-section { font-size: 13px; letter-spacing: 2px; opacity: 0.75; margin: 14px 0 6px; }
+  #meta .meta-offer {
+    display: block;
+    width: 320px;
+    max-width: 88vw;
+    margin: 5px auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: rgba(199, 125, 255, 0.12);
+    border: 1px solid #c77dff;
+    color: #d9a7ff;
+    padding: 8px 10px;
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+  }
+  #meta .meta-offer:active { background: rgba(199, 125, 255, 0.3); }
+  #meta .meta-offer:disabled { opacity: 0.4; cursor: default; border-color: #4a3a55; color: #7a6a88; }
+  #meta .meta-offer.owned { border-style: dashed; opacity: 0.7; cursor: default; }
+  #meta .meta-offer.selected { background: rgba(199, 125, 255, 0.32); box-shadow: 0 0 8px rgba(199, 125, 255, 0.5); }
+  .meta-signin {
+    display: inline-block;
+    margin: 4px auto 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    background: rgba(125, 211, 255, 0.15);
+    border: 1px solid #7dd3ff;
+    color: #7dd3ff;
+    padding: 8px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .meta-signin:active { background: rgba(125, 211, 255, 0.3); }
+  #meta .meta-close { margin-top: 16px; opacity: 0.7; font-size: 12px; }
+  .go-bones { margin-top: 6px; color: #d9a7ff; min-height: 18px; }
+
+  #hubBtn {
+    position: fixed;
+    left: 12px;
+    top: 12px;
+    z-index: 6;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid #c77dff;
+    background: rgba(199, 125, 255, 0.12);
+    color: #d9a7ff;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #hubBtn:active { background: rgba(199, 125, 255, 0.3); }
+
+  #muteBtn {
+    position: fixed;
+    left: 54px;
+    top: 12px;
+    z-index: 6;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid #4c9d50;
+    background: rgba(76, 157, 80, 0.12);
+    color: #9be89f;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #muteBtn:active { background: rgba(76, 157, 80, 0.3); }
+  #muteBtn.muted { opacity: 0.45; text-decoration: line-through; }
+
   #guideBtn {
     position: fixed;
     bottom: 16px;
@@ -333,11 +427,18 @@
   <button id="btnDash" class="ability-locked" data-ability="dash">DASH</button>
 </div>
 <button id="guideBtn" title="How to play">?</button>
+<button id="hubBtn" title="Bone Hoard (H)">&#9762;</button>
+<button id="muteBtn" title="Toggle music (M)">&#9834;</button>
+<audio id="bgm" loop preload="auto">
+  <source src="audio/catacombs-theme.ogg" type="audio/ogg">
+  <source src="audio/catacombs-theme.mp3" type="audio/mpeg">
+</audio>
 <div id="toast"></div>
 <div id="bossBanner"></div>
 <div id="gameOver"></div>
 <div id="shop"></div>
 <div id="levelUp"></div>
+<div id="meta"></div>
 <div id="guide"></div>
 
 <script>
@@ -358,8 +459,14 @@
   var levelUpEl = document.getElementById('levelUp');
   var guideEl = document.getElementById('guide');
   var guideBtnEl = document.getElementById('guideBtn');
+  var metaEl = document.getElementById('meta');
+  var hubBtnEl = document.getElementById('hubBtn');
+  var muteBtnEl = document.getElementById('muteBtn');
+  var bgmEl = document.getElementById('bgm');
   var BEST_KEY = 'catacombs_best_v1';
   var STATS_KEY = 'catacombs_stats_v1';
+  var CLASS_KEY = 'catacombs_class_v1';
+  var MUTE_KEY = 'catacombs_muted_v1';
 
   var TILE = 20;
   var VISION_RADIUS = 6;
@@ -926,7 +1033,7 @@
       player: {
         x: 0, y: 0, hp: 20, maxHp: 20, atk: 3, kills: 0, gold: 0,
         mp: 0, maxMp: 10, facing: 'down', hasFireball: false, hasDash: false,
-        hasShot: false, shotBonus: 0,
+        hasShot: false, shotBonus: 0, fireballCost: ABILITY_COST.fireball,
         level: 1, xp: 0, xpToNext: xpForLevel(1)
       },
       turns: 0,
@@ -938,8 +1045,13 @@
       shopOpen: false,
       levelUpOpen: false,
       pendingLevelUps: 0,
-      guideOpen: false
+      guideOpen: false,
+      hubOpen: false,
+      classKey: META.selectedClass,
+      runSubmitted: false,
+      bonesAwarded: null
     };
+    applyMeta(state.player);
     logMsg('You descend into the torch-lit catacombs...');
     hideGameOver();
     hideToast();
@@ -1005,12 +1117,355 @@
     return s.floor * 100 + s.player.kills * 10 + s.player.gold;
   }
 
+  // ---- meta-progression (bones, classes, skill tree) ----
+  //
+  // Anonymous play never touches the server; signing in syncs bones/unlocks to
+  // the account. The class/skill effects below must stay in sync with the
+  // UNLOCK_CATALOG in web/src/lib/game.ts (keys + costs).
+
+  var META_CLASSES = [
+    { key: 'class:adventurer', name: 'Adventurer', cost: 0, desc: 'No bonus — the classic start.',
+      apply: function () {} },
+    { key: 'class:warrior', name: 'Warrior', cost: 40, desc: 'Start with +2 attack (Might).',
+      apply: function (p) { p.atk += 2; } },
+    { key: 'class:tank', name: 'Tank', cost: 40, desc: 'Start with +10 max HP (Vitality).',
+      apply: function (p) { p.maxHp += 10; p.hp += 10; } },
+    { key: 'class:mage', name: 'Mage', cost: 60, desc: 'Start knowing Fireball (F).',
+      apply: function (p) { p.hasFireball = true; } },
+    { key: 'class:ranger', name: 'Ranger', cost: 60, desc: 'Start knowing Ranged Shot (R).',
+      apply: function (p) { p.hasShot = true; } }
+  ];
+
+  var META_SKILLS = [
+    { key: 'skill:vitality_1', name: 'Hardy I', cost: 20, desc: '+2 starting max HP',
+      apply: function (p) { p.maxHp += 2; p.hp += 2; } },
+    { key: 'skill:vitality_2', name: 'Hardy II', cost: 45, desc: '+4 starting max HP',
+      apply: function (p) { p.maxHp += 4; p.hp += 4; } },
+    { key: 'skill:might_1', name: 'Strong Arm', cost: 30, desc: '+1 starting attack',
+      apply: function (p) { p.atk += 1; } },
+    { key: 'skill:fortune_1', name: 'Coin Pouch', cost: 25, desc: 'Start with 15 gold',
+      apply: function (p) { p.gold += 15; } },
+    { key: 'skill:fortune_2', name: 'Deep Pockets', cost: 55, desc: 'Start with 35 gold',
+      apply: function (p) { p.gold += 35; } },
+    { key: 'skill:arcane_1', name: 'Focus', cost: 20, desc: '+5 starting max MP',
+      apply: function (p) { p.maxMp += 5; p.mp += 5; } },
+    { key: 'skill:efficient_magic', name: 'Efficient Magic', cost: 50, desc: 'Fireball costs 1 less MP',
+      apply: function (p) { p.fireballCost = Math.max(1, p.fireballCost - 1); } },
+    { key: 'skill:marksman_1', name: 'Marksman', cost: 35, desc: '+2 shot damage',
+      apply: function (p) { p.shotBonus += 2; } },
+    { key: 'skill:swift', name: 'Swift', cost: 60, desc: 'Start with Dash (SPACE)',
+      apply: function (p) { p.hasDash = true; } },
+    { key: 'skill:endure', name: 'Endure', cost: 40, desc: '+5 starting max HP & MP',
+      apply: function (p) { p.maxHp += 5; p.hp += 5; p.maxMp += 5; p.mp += 5; } }
+  ];
+
+  function loadSelectedClass() {
+    try {
+      if (typeof localStorage === 'undefined') return 'class:adventurer';
+      return localStorage.getItem(CLASS_KEY) || 'class:adventurer';
+    } catch (e) { return 'class:adventurer'; }
+  }
+  function saveSelectedClass(key) {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(CLASS_KEY, key); }
+    catch (e) { /* ignore */ }
+  }
+
+  var META = {
+    loaded: false,
+    authenticated: false,
+    displayName: null,
+    bones: 0,
+    unlocks: {},              // { unlockKey: true }
+    selectedClass: loadSelectedClass()
+  };
+
+  function classDef(key) {
+    for (var i = 0; i < META_CLASSES.length; i++) if (META_CLASSES[i].key === key) return META_CLASSES[i];
+    return META_CLASSES[0];
+  }
+  function classUnlocked(key) {
+    return key === 'class:adventurer' || META.unlocks[key] === true;
+  }
+
+  // Apply the selected class + every owned skill to a fresh player. Called from
+  // newGame(). Falls back to Adventurer if the stored class isn't unlocked.
+  function applyMeta(player) {
+    if (!classUnlocked(META.selectedClass)) META.selectedClass = 'class:adventurer';
+    classDef(META.selectedClass).apply(player);
+    for (var i = 0; i < META_SKILLS.length; i++) {
+      if (META.unlocks[META_SKILLS[i].key] === true) META_SKILLS[i].apply(player);
+    }
+  }
+
+  function applyProfileData(data) {
+    META.loaded = true;
+    META.authenticated = !!data.authenticated;
+    META.displayName = data.displayName || null;
+    META.bones = typeof data.bones === 'number' ? data.bones : 0;
+    META.unlocks = {};
+    if (Array.isArray(data.unlocks)) {
+      for (var i = 0; i < data.unlocks.length; i++) META.unlocks[data.unlocks[i]] = true;
+    }
+    if (!classUnlocked(META.selectedClass)) META.selectedClass = 'class:adventurer';
+  }
+
+  function fetchProfile() {
+    return fetch('/api/game/profile', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        applyProfileData(data);
+        updateBestHud();
+        if (state && state.hubOpen) renderHub();
+        // If the current run is brand-new and untouched, restart it so the
+        // just-loaded class/skill bonuses take effect on this first run too.
+        if (state && !state.gameOver && state.floor === 1 && state.turns === 0) {
+          newGame();
+        }
+      })
+      .catch(function () { META.loaded = true; });
+  }
+
+  // Submit a finished run; server clamps stats and returns bones awarded.
+  function submitRun() {
+    if (state.runSubmitted) return;
+    state.runSubmitted = true;
+    if (!META.authenticated) return; // anonymous runs aren't persisted
+    var payload = {
+      classKey: state.classKey,
+      depth: state.floor,
+      kills: state.player.kills,
+      gold: state.player.gold,
+      turns: state.turns
+    };
+    fetch('/api/game/runs', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (typeof data.bones === 'number') META.bones = data.bones;
+        state.bonesAwarded = typeof data.bonesAwarded === 'number' ? data.bonesAwarded : 0;
+        updateBestHud();
+        renderGameOverBones();
+      })
+      .catch(function () {
+        state.bonesAwarded = 0;
+        renderGameOverBones();
+      });
+  }
+
+  function buyUnlock(key) {
+    if (!META.authenticated) { signInTop(); return; }
+    if (META.unlocks[key]) return;
+    fetch('/api/game/unlock', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ unlockKey: key })
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) {
+        if (res.ok && res.body.ok) {
+          META.bones = res.body.bones;
+          META.unlocks = {};
+          for (var i = 0; i < res.body.unlocks.length; i++) META.unlocks[res.body.unlocks[i]] = true;
+          showToast('UNLOCKED');
+        } else if (res.body && res.body.reason === 'insufficient') {
+          showToast('NOT ENOUGH BONES');
+          if (typeof res.body.bones === 'number') META.bones = res.body.bones;
+        }
+        updateBestHud();
+        renderHub();
+      })
+      .catch(function () { /* ignore */ });
+  }
+
+  function selectClass(key) {
+    if (!classUnlocked(key)) { buyUnlock(key); return; }
+    META.selectedClass = key;
+    saveSelectedClass(key);
+    renderHub();
+  }
+
+  // Break out of the game iframe for the OAuth round-trip; nested-iframe
+  // sign-in can hit third-party-cookie issues.
+  function signInTop() {
+    try { window.top.location.href = '/api/auth/signin?callbackUrl=/games/catacombs'; }
+    catch (e) { window.location.href = '/api/auth/signin?callbackUrl=/games/catacombs'; }
+  }
+
+  function openHub() {
+    if (state) state.hubOpen = true;
+    renderHub();
+    metaEl.style.display = 'flex';
+  }
+  function closeHub() {
+    if (state) state.hubOpen = false;
+    metaEl.style.display = 'none';
+  }
+
+  function renderHub() {
+    var html = '<div class="meta-title">BONE HOARD</div>';
+    if (META.authenticated) {
+      html += '<div class="meta-account">signed in' + (META.displayName ? ' as ' + escapeHtml(META.displayName) : '') + '</div>';
+    } else {
+      html += '<div class="meta-account">playing anonymously — progress is saved on this device only</div>';
+      html += '<button class="meta-signin" data-action="signin">Sign in to save &amp; sync</button>';
+    }
+    html += '<div class="meta-bones">&#9762; ' + META.bones + ' bones</div>';
+
+    html += '<div class="meta-section">CLASS (start of every run)</div>';
+    for (var c = 0; c < META_CLASSES.length; c++) {
+      var cl = META_CLASSES[c];
+      var owned = classUnlocked(cl.key);
+      var selected = META.selectedClass === cl.key;
+      var cls = 'meta-offer' + (selected ? ' selected' : '');
+      var label;
+      if (!owned) label = cl.name + ' — ' + cl.desc + '  [' + cl.cost + ' bones]';
+      else if (selected) label = '&#10003; ' + cl.name + ' — ' + cl.desc;
+      else label = cl.name + ' — ' + cl.desc;
+      html += '<button class="' + cls + '" data-kind="class" data-key="' + cl.key + '">' + label + '</button>';
+    }
+
+    html += '<div class="meta-section">SKILLS (permanent, all runs)</div>';
+    for (var s = 0; s < META_SKILLS.length; s++) {
+      var sk = META_SKILLS[s];
+      var have = META.unlocks[sk.key] === true;
+      var scls = 'meta-offer' + (have ? ' owned' : '');
+      var slabel = (have ? '&#10003; ' : '') + sk.name + ' — ' + sk.desc + (have ? '' : '  [' + sk.cost + ' bones]');
+      html += '<button class="' + scls + '" data-kind="skill" data-key="' + sk.key + '"' + (have ? ' disabled' : '') + '>' + slabel + '</button>';
+    }
+
+    html += '<button class="meta-signin" data-action="leaderboard">View Leaderboard</button>';
+    html += '<div class="meta-close">Press H or ESC to close</div>';
+    metaEl.innerHTML = html;
+  }
+
+  function showLeaderboard() {
+    metaEl.innerHTML = '<div class="meta-title">LEADERBOARD</div>' +
+      '<div class="meta-account">loading top runs...</div>' +
+      '<button class="meta-signin" data-action="hub-back">Back</button>';
+    fetch('/api/game/leaderboard', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var rows = (data && data.entries) || [];
+        var html = '<div class="meta-title">LEADERBOARD</div>';
+        if (!rows.length) {
+          html += '<div class="meta-account">No ranked runs yet — be the first!</div>';
+        } else {
+          html += '<div class="meta-section">DEEPEST DESCENTS</div>';
+          for (var i = 0; i < rows.length; i++) {
+            var e = rows[i];
+            var cname = classDef(e.classKey || 'class:adventurer').name;
+            html += '<div class="meta-offer" style="cursor:default">' +
+              (i + 1) + '. ' + escapeHtml(e.displayName) + ' — depth ' + e.depth +
+              ', ' + e.kills + ' kills, ' + e.gold + ' gold (' + escapeHtml(cname) + ')</div>';
+          }
+        }
+        html += '<button class="meta-signin" data-action="hub-back">Back</button>';
+        html += '<div class="meta-close">Press H or ESC to close</div>';
+        metaEl.innerHTML = html;
+      })
+      .catch(function () {
+        metaEl.innerHTML = '<div class="meta-title">LEADERBOARD</div>' +
+          '<div class="meta-account">Could not load leaderboard.</div>' +
+          '<button class="meta-signin" data-action="hub-back">Back</button>';
+      });
+  }
+
+  function renderGameOverBones() {
+    var el = document.getElementById('go-bones');
+    if (!el) return;
+    if (!META.authenticated) {
+      el.innerHTML = '<button class="meta-signin" data-action="signin">Sign in to earn &amp; save bones</button>';
+    } else if (state && state.bonesAwarded === null) {
+      el.textContent = 'Banking bones...';
+    } else {
+      var earned = (state && state.bonesAwarded) || 0;
+      el.innerHTML = '&#9762; +' + earned + ' bones  (' + META.bones + ' total) — press H to spend';
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  // ---- background music ----
+  //
+  // A single looping ambient track (web/public/games/audio/catacombs-theme.*).
+  // Browsers block autoplay until a user gesture, so playback is armed on the
+  // first key/tap. Mute preference persists in localStorage; SFX (playSound)
+  // are unaffected.
+
+  var BGM_VOLUME = 0.32;
+  var musicStarted = false;
+
+  function loadMuted() {
+    try { return typeof localStorage !== 'undefined' && localStorage.getItem(MUTE_KEY) === '1'; }
+    catch (e) { return false; }
+  }
+  function saveMuted(muted) {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); }
+    catch (e) { /* ignore */ }
+  }
+  var musicMuted = loadMuted();
+
+  function updateMuteButton() {
+    if (!muteBtnEl) return;
+    muteBtnEl.innerHTML = musicMuted ? '&#9835;' : '&#9834;';
+    muteBtnEl.classList.toggle('muted', musicMuted);
+  }
+
+  function startMusic() {
+    if (musicStarted || musicMuted || !bgmEl) return;
+    bgmEl.volume = BGM_VOLUME;
+    var p = bgmEl.play();
+    if (p && typeof p.then === 'function') {
+      p.then(function () { musicStarted = true; }).catch(function () {
+        // Autoplay still blocked or asset missing — leave for the next gesture.
+      });
+    } else {
+      musicStarted = true;
+    }
+  }
+
+  function toggleMute() {
+    musicMuted = !musicMuted;
+    saveMuted(musicMuted);
+    updateMuteButton();
+    if (musicMuted) {
+      if (bgmEl) bgmEl.pause();
+    } else {
+      startMusic();
+    }
+  }
+
+  function armMusicOnGesture() {
+    function handler() {
+      startMusic();
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('touchstart', handler);
+    }
+    window.addEventListener('keydown', handler);
+    window.addEventListener('pointerdown', handler);
+    window.addEventListener('touchstart', handler);
+  }
+
   function updateBestHud() {
     var best = loadBest();
     var stats = loadStats();
     var lines = [];
     if (best) lines.push('BEST  score ' + best.score + '   depth ' + best.depth + '   ' + best.kills + ' kills');
     if (stats.gamesPlayed > 0) lines.push(stats.gamesPlayed + ' games   deepest ' + stats.deepestFloor + '   ' + stats.totalKills + ' total kills');
+    if (META.loaded) {
+      lines.push('☠ ' + META.bones + ' bones   class: ' + classDef(META.selectedClass).name +
+        (META.authenticated ? '' : '   (anon)'));
+    }
     bestHudEl.textContent = lines.join('\n');
   }
 
@@ -1175,9 +1630,12 @@
     stats.totalKills += state.player.kills;
     stats.deepestFloor = Math.max(stats.deepestFloor, state.floor);
     saveStats(stats);
+    state.bonesAwarded = null;
     showGameOver(score, best, isNewBest);
     updateBestHud();
     playSound(isNewBest ? 'newbest' : 'gameover');
+    submitRun();
+    renderGameOverBones();
   }
 
   function checkStairs() {
@@ -1255,7 +1713,7 @@
   // ---- player turn / abilities ----
 
   function canAct() {
-    return !!state && !state.gameOver && !state.shopOpen && !state.levelUpOpen && !state.guideOpen;
+    return !!state && !state.gameOver && !state.shopOpen && !state.levelUpOpen && !state.guideOpen && !state.hubOpen;
   }
 
   function setFacing(dx, dy) {
@@ -1373,11 +1831,12 @@
 
   function useFireball() {
     if (!canAct() || !state.player.hasFireball) return;
-    if (state.player.mp < ABILITY_COST.fireball) {
+    var fireCost = state.player.fireballCost || ABILITY_COST.fireball;
+    if (state.player.mp < fireCost) {
       logMsg('Not enough MP to cast Fireball.');
       return;
     }
-    state.player.mp -= ABILITY_COST.fireball;
+    state.player.mp -= fireCost;
     playSound('cast');
     var d = FACING_DELTA[state.player.facing];
     var x = state.player.x, y = state.player.y;
@@ -1725,6 +2184,7 @@
       '<div>Level ' + state.player.level + '   Kills: ' + state.player.kills + '   Gold: ' + state.player.gold + '   Turns: ' + state.turns + '</div>' +
       '<div>Score: ' + score + (isNewBest ? '  <span class="go-newbest">NEW BEST!</span>' : '') + '</div>' +
       bestLine +
+      '<div id="go-bones" class="go-bones"></div>' +
       '<div class="go-hint">Press ENTER, SPACE, or tap to descend again</div>';
     gameOverEl.style.display = 'flex';
   }
@@ -1762,8 +2222,18 @@
   // ---- input ----
 
   window.addEventListener('keydown', function (e) {
+    if (state && state.hubOpen) {
+      if (e.key === 'Escape' || e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        closeHub();
+      }
+      return;
+    }
     if (state && state.gameOver) {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        openHub();
+      } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         newGame();
       }
@@ -1796,6 +2266,16 @@
     if (e.key === '?') {
       e.preventDefault();
       openGuide();
+      return;
+    }
+    if (e.key === 'h' || e.key === 'H') {
+      e.preventDefault();
+      openHub();
+      return;
+    }
+    if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      toggleMute();
       return;
     }
     if (e.key === 'r' || e.key === 'R') {
@@ -1887,6 +2367,32 @@
     if (state.guideOpen) closeGuide(); else openGuide();
   });
 
+  hubBtnEl.addEventListener('click', function () {
+    if (state && (state.shopOpen || state.levelUpOpen || state.guideOpen)) return;
+    if (state && state.hubOpen) closeHub(); else openHub();
+  });
+
+  muteBtnEl.addEventListener('click', function () { toggleMute(); });
+
+  metaEl.addEventListener('click', function (e) {
+    var signin = e.target.closest('[data-action="signin"]');
+    if (signin) { signInTop(); return; }
+    if (e.target.closest('[data-action="leaderboard"]')) { showLeaderboard(); return; }
+    if (e.target.closest('[data-action="hub-back"]')) { renderHub(); return; }
+    var offer = e.target.closest('button.meta-offer');
+    if (offer) {
+      if (offer.dataset.kind === 'class') selectClass(offer.dataset.key);
+      else buyUnlock(offer.dataset.key);
+      return;
+    }
+    if (e.target === metaEl) closeHub();
+  });
+
+  // Sign-in prompt shown on the game-over screen.
+  gameOverEl.addEventListener('click', function (e) {
+    if (e.target.closest('[data-action="signin"]')) { e.stopPropagation(); signInTop(); }
+  }, true);
+
   function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -1903,7 +2409,10 @@
   }
 
   resizeCanvas();
+  updateMuteButton();
+  armMusicOnGesture();
   newGame();
+  fetchProfile();
   requestAnimationFrame(startRenderLoop);
 })();
 </script>
