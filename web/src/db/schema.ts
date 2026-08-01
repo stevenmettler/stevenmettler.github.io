@@ -135,6 +135,11 @@ export const goals = pgTable("goals", {
   startsOn: date("starts_on").notNull(),
   endsOn: date("ends_on").notNull(),
   archived: boolean("archived").notNull().default(false),
+  // The one goal shown publicly on the homepage. Kept to a single row by the
+  // feature action, which clears the flag everywhere else in one transaction;
+  // the public read takes the first match regardless, so a stray second row
+  // would degrade rather than break.
+  featured: boolean("featured").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

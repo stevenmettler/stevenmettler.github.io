@@ -78,11 +78,15 @@ export async function updateGoal(formData: FormData) {
   await requireOwner();
 
   const id = readId(formData, "goalId");
+  const archived = formData.get("archived") === "on";
   await db
     .update(goals)
     .set({
       ...readGoalFields(formData),
-      archived: formData.get("archived") === "on",
+      archived,
+      // An archived goal is not shown publicly, so drop the flag rather than
+      // leave it set on something invisible.
+      ...(archived ? { featured: false } : {}),
       updatedAt: new Date(),
     })
     .where(eq(goals.id, id));
@@ -95,6 +99,41 @@ export async function deleteGoal(formData: FormData) {
 
   const id = readId(formData, "goalId");
   await db.delete(goals).where(eq(goals.id, id));
+
+  redirect("/goals");
+}
+
+/**
+ * Feature a goal on the public homepage, replacing whatever was featured
+ * before. Both writes share a transaction so there is never a moment where
+ * two goals are public or none is.
+ */
+export async function featureGoal(formData: FormData) {
+  await requireOwner();
+
+  const id = readId(formData, "goalId");
+  await db.transaction(async (tx) => {
+    await tx
+      .update(goals)
+      .set({ featured: false, updatedAt: new Date() })
+      .where(eq(goals.featured, true));
+    await tx
+      .update(goals)
+      .set({ featured: true, updatedAt: new Date() })
+      .where(eq(goals.id, id));
+  });
+
+  redirect("/goals");
+}
+
+export async function unfeatureGoal(formData: FormData) {
+  await requireOwner();
+
+  const id = readId(formData, "goalId");
+  await db
+    .update(goals)
+    .set({ featured: false, updatedAt: new Date() })
+    .where(eq(goals.id, id));
 
   redirect("/goals");
 }

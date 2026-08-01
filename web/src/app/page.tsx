@@ -3,11 +3,28 @@ import { ThemeToggle } from "./theme-toggle";
 import { GitHubActivity } from "./github-activity";
 import { SiteBackground } from "./site-background";
 import { getPublishedPosts } from "@/lib/posts";
+import { getFeaturedGoal } from "@/lib/goals";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const posts = await getPublishedPosts();
+  const [posts, featuredGoal] = await Promise.all([
+    getPublishedPosts(),
+    getFeaturedGoal(),
+  ]);
+
+  // Section numbers are derived rather than hardcoded so they stay contiguous
+  // when the "currently" section comes and goes with a featured goal.
+  const order = [
+    "about",
+    ...(featuredGoal ? ["currently"] : []),
+    "work",
+    "blog",
+    "games",
+    "contact",
+  ];
+  const num = (name: string) =>
+    String(order.indexOf(name) + 1).padStart(2, "0");
 
   return (
     <div className="sm-site">
@@ -16,11 +33,14 @@ export default async function Home() {
         <nav className="sm-nav">
           <Link href="/">steven mettler</Link>
           <div className="sm-nav-links">
-            <a href="#about">01 about</a>
-            <a href="#work">02 work</a>
-            <a href="#blog">03 blog</a>
-            <a href="#games">04 games</a>
-            <a href="#contact">05 contact</a>
+            <a href="#about">{num("about")} about</a>
+            {featuredGoal ? (
+              <a href="#currently">{num("currently")} currently</a>
+            ) : null}
+            <a href="#work">{num("work")} work</a>
+            <a href="#blog">{num("blog")} blog</a>
+            <a href="#games">{num("games")} games</a>
+            <a href="#contact">{num("contact")} contact</a>
             <a href="/feed.xml" className="sm-nav-resume">
               rss
             </a>
@@ -42,7 +62,7 @@ export default async function Home() {
 
         <section id="about" className="sm-section">
           <div className="sm-section-label">
-            01
+            {num("about")}
             <br />
             ABOUT
           </div>
@@ -52,9 +72,40 @@ export default async function Home() {
           </div>
         </section>
 
+        {featuredGoal ? (
+          <section id="currently" className="sm-section">
+            <div className="sm-section-label">
+              {num("currently")}
+              <br />
+              CURRENTLY
+            </div>
+            <div className="sm-section-content">
+              <div className="sm-goal-row">
+                <span className="sm-goal-name">{featuredGoal.name}</span>
+                <span className="sm-goal-percent">
+                  {featuredGoal.percentComplete}%
+                </span>
+              </div>
+              <div
+                className="sm-goal-bar"
+                role="progressbar"
+                aria-label={`${featuredGoal.name} progress`}
+                aria-valuenow={featuredGoal.percentComplete}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="sm-goal-bar-fill"
+                  style={{ width: `${featuredGoal.percentComplete}%` }}
+                />
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <section id="work" className="sm-section">
           <div className="sm-section-label">
-            02
+            {num("work")}
             <br />
             WORK
           </div>
@@ -75,7 +126,7 @@ export default async function Home() {
 
         <section id="blog" className="sm-section">
           <div className="sm-section-label">
-            03
+            {num("blog")}
             <br />
             BLOG
           </div>
@@ -93,7 +144,7 @@ export default async function Home() {
 
         <section id="games" className="sm-section">
           <div className="sm-section-label">
-            04
+            {num("games")}
             <br />
             GAMES
           </div>
@@ -108,7 +159,7 @@ export default async function Home() {
 
         <section id="contact" className="sm-section">
           <div className="sm-section-label sm-contact-label">
-            05
+            {num("contact")}
             <br />
             CONTACT
           </div>

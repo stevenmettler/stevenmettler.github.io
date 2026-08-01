@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { startTimer } from "./actions";
+import { featureGoal, startTimer, unfeatureGoal } from "./actions";
 import styles from "./goals.module.css";
 import {
   daysBetween,
@@ -83,14 +83,38 @@ export function GoalCard({
         ) : null}
       </div>
 
-      {canStartTimer && !goal.archived ? (
-        <form action={startTimer} className={styles.formSpaced}>
-          <input type="hidden" name="goalId" value={goal.id} />
-          <button type="submit" className={`${styles.button} ${styles.buttonSmall}`}>
-            start timer
-          </button>
-        </form>
-      ) : null}
+      {goal.archived ? null : (
+        <div className={styles.cardActions}>
+          {canStartTimer ? (
+            <form action={startTimer}>
+              <input type="hidden" name="goalId" value={goal.id} />
+              <button
+                type="submit"
+                className={`${styles.button} ${styles.buttonSmall}`}
+              >
+                start timer
+              </button>
+            </form>
+          ) : null}
+
+          <form action={goal.featured ? unfeatureGoal : featureGoal}>
+            <input type="hidden" name="goalId" value={goal.id} />
+            <button
+              type="submit"
+              className={`${styles.button} ${styles.buttonSmall} ${
+                goal.featured ? styles.buttonOn : styles.buttonQuiet
+              }`}
+              title={
+                goal.featured
+                  ? "Currently shown on your homepage"
+                  : "Show this goal on your homepage"
+              }
+            >
+              {goal.featured ? "on homepage" : "show on homepage"}
+            </button>
+          </form>
+        </div>
+      )}
     </article>
   );
 }

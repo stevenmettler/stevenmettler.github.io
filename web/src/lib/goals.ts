@@ -47,6 +47,45 @@ export async function getGoalById(id: number): Promise<GoalWithTotal | null> {
   return row ? { ...row.goal, loggedSeconds: row.loggedSeconds } : null;
 }
 
+export type FeaturedGoal = { name: string; percentComplete: number };
+
+/**
+ * The goal shown publicly on the homepage, or null if none is featured.
+ *
+ * This is the only goals query reachable without signing in, so it returns a
+ * name and a rounded percentage and nothing else. Hours logged, the target,
+ * the date window, and pace stay private even if this result is passed
+ * somewhere careless later.
+ */
+export async function getFeaturedGoal(): Promise<FeaturedGoal | null> {
+  const [row] = await db
+    .select({
+      name: goals.name,
+      targetSeconds: goals.targetSeconds,
+      loggedSeconds: sql<number>`coalesce(sum(${goalSessions.durationSeconds}), 0)`.mapWith(
+        Number
+      ),
+    })
+    .from(goals)
+    .leftJoin(
+      goalSessions,
+      and(eq(goalSessions.goalId, goals.id), isNotNull(goalSessions.endedAt))
+    )
+    .where(and(eq(goals.featured, true), eq(goals.archived, false)))
+    .groupBy(goals.id)
+    .orderBy(asc(goals.id))
+    .limit(1);
+
+  if (!row) return null;
+
+  const percent =
+    row.targetSeconds === 0
+      ? 100
+      : Math.min(100, (row.loggedSeconds / row.targetSeconds) * 100);
+
+  return { name: row.name, percentComplete: Math.round(percent * 10) / 10 };
+}
+
 export type RunningSession = { session: GoalSession; goal: Goal };
 
 /**

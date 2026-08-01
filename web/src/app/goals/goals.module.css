@@ -328,6 +328,23 @@
   margin-top: 14px;
 }
 
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.buttonOn {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.buttonOn:hover {
+  background: none;
+  color: var(--accent);
+}
+
 .formSeparated {
   margin-top: 24px;
   padding-top: 20px;
