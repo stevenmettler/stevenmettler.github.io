@@ -1,4 +1,15 @@
-import { pgTable, serial, text, boolean, timestamp, integer, unique } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  pgTable,
+  serial,
+  text,
+  boolean,
+  timestamp,
+  integer,
+  date,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
@@ -109,3 +120,59 @@ export const gameRuns = pgTable("game_runs", {
 });
 
 export type GameRun = typeof gameRuns.$inferSelect;
+
+// --- Goal hour tracking (owner-only, /goals) -----------------------------
+
+// A long-horizon time goal, e.g. "1000 hours of working out in 2026". The
+// window is stored as plain dates rather than timestamps because a goal starts
+// and ends on a calendar day, not at an instant. Single-tenant on purpose:
+// there is no owner column because /goals is gated to the owner in one place.
+export const goals = pgTable("goals", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  // Seconds, not hours, so every duration in the feature shares one unit.
+  targetSeconds: integer("target_seconds").notNull(),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on").notNull(),
+  archived: boolean("archived").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type Goal = typeof goals.$inferSelect;
+export type NewGoal = typeof goals.$inferInsert;
+
+// One row per logged block of time. A row with `ended_at IS NULL` is a
+// stopwatch that is still running: keeping it here rather than in a separate
+// table means stopping the timer is a single UPDATE, and a running timer
+// survives a refresh or a move to another device because it lives in Postgres
+// instead of browser state.
+//
+// `duration_seconds` is the source of truth for totals, not the difference
+// between the timestamps, so hand-edited entries need no special casing.
+export const goalSessions = pgTable(
+  "goal_sessions",
+  {
+    id: serial("id").primaryKey(),
+    goalId: integer("goal_id")
+      .notNull()
+      .references(() => goals.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    note: text("note"),
+    source: text("source").notNull().default("timer"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // At most one running timer per goal, enforced by the database. "At most
+    // one running timer overall" is a product rule and lives in the actions.
+    uniqueIndex("goal_sessions_one_running_per_goal")
+      .on(table.goalId)
+      .where(sql`ended_at is null`),
+  ]
+);
+
+export type GoalSession = typeof goalSessions.$inferSelect;
+export type NewGoalSession = typeof goalSessions.$inferInsert;

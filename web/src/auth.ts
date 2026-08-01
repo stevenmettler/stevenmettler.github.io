@@ -39,7 +39,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           account.provider === "github" && githubLogin === OWNER_GITHUB_LOGIN;
         token.displayName =
           (profile?.name as string | undefined) ?? githubLogin ?? null;
+        return token;
       }
+
+      // A token minted before these claims existed carries no provider, so it
+      // can never be an owner and never resolves to a player. Left alone it
+      // looks signed in while behaving as an anonymous visitor, and nothing
+      // short of a manual sign-out fixes it. Returning null drops the cookie
+      // so the next sign-in mints a complete token.
+      if (!token.provider) return null;
+
       return token;
     },
     async session({ session, token }) {
