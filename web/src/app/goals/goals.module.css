@@ -55,6 +55,32 @@
   color: var(--muted);
 }
 
+.blockHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.blockHead .blockLabel {
+  margin: 0;
+}
+
+.exports {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+.exports a:hover {
+  color: var(--accent);
+}
+
 .empty {
   margin: 0;
   font-size: 12.5px;

@@ -69,9 +69,16 @@ export default async function GoalDetailPage({
       </section>
 
       <section className={styles.block}>
-        <p className={styles.blockLabel}>
-          Entries ({sessions.length})
-        </p>
+        <div className={styles.blockHead}>
+          <p className={styles.blockLabel}>Entries ({sessions.length})</p>
+          {sessions.length > 0 ? (
+            <div className={styles.exports}>
+              <a href={`/goals/export?goal=${goal.id}`} download>
+                these entries .csv
+              </a>
+            </div>
+          ) : null}
+        </div>
         {sessions.length === 0 ? (
           <p className={styles.empty}>Nothing logged against this goal yet.</p>
         ) : (

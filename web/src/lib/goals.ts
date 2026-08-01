@@ -67,21 +67,25 @@ export async function getRunningSession(): Promise<RunningSession | null> {
 
 export type SessionWithGoal = { session: GoalSession; goalName: string };
 
-/** Completed entries, newest first, optionally narrowed to one goal. */
+/**
+ * Completed entries, newest first, optionally narrowed to one goal.
+ * Omitting `limit` returns every entry, which is what the CSV export wants.
+ */
 export async function getSessions({
   goalId,
-  limit = 25,
+  limit,
 }: { goalId?: number; limit?: number } = {}): Promise<SessionWithGoal[]> {
   const filters = [isNotNull(goalSessions.endedAt)];
   if (goalId !== undefined) filters.push(eq(goalSessions.goalId, goalId));
 
-  return db
+  const query = db
     .select({ session: goalSessions, goalName: goals.name })
     .from(goalSessions)
     .innerJoin(goals, eq(goals.id, goalSessions.goalId))
     .where(and(...filters))
-    .orderBy(desc(goalSessions.startedAt), desc(goalSessions.id))
-    .limit(limit);
+    .orderBy(desc(goalSessions.startedAt), desc(goalSessions.id));
+
+  return limit === undefined ? query : query.limit(limit);
 }
 
 export type RecentTotals = { today: number; last7Days: number };

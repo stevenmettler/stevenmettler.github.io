@@ -200,9 +200,22 @@ export default async function GoalsPage({
         </details>
       </section>
 
-      {recentSessions.length > 0 ? (
+      {allGoals.length > 0 ? (
         <section className={styles.block}>
-          <p className={styles.blockLabel}>Recent entries</p>
+          <div className={styles.blockHead}>
+            <p className={styles.blockLabel}>Recent entries</p>
+            <div className={styles.exports}>
+              <a href="/goals/export" download>
+                all entries .csv
+              </a>
+              <a href="/goals/export?type=goals" download>
+                goal summary .csv
+              </a>
+            </div>
+          </div>
+          {recentSessions.length === 0 ? (
+            <p className={styles.empty}>Nothing logged yet.</p>
+          ) : null}
           <div className={styles.entries}>
             {recentSessions.map(({ session, goalName }) => (
               <div key={session.id} className={styles.entry}>
