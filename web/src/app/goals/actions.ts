@@ -1,6 +1,6 @@
 "use server";
 
-import { desc, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth, isOwnerSession } from "@/auth";
 import { db } from "@/db";
@@ -11,6 +11,7 @@ import {
   parseDuration,
   todayInZone,
 } from "@/lib/goal-progress";
+import * as timer from "@/lib/goal-timer";
 
 // The layout already gates the route, but every action re-checks: an action is
 // a public endpoint, not something only reachable through its own page.
@@ -140,59 +141,29 @@ export async function unfeatureGoal(formData: FormData) {
 
 // --- Stopwatch -----------------------------------------------------------
 
+// The stopwatch itself lives in @/lib/goal-timer so the iOS Shortcuts API can
+// share it. These wrappers only add the owner check and the redirect.
+
 export async function startTimer(formData: FormData) {
   await requireOwner();
 
-  const goalId = readId(formData, "goalId");
-  const [running] = await db
-    .select({ id: goalSessions.id })
-    .from(goalSessions)
-    .where(isNull(goalSessions.endedAt))
-    .limit(1);
-  // Reachable from a stale page: another tab or device may have started a
-  // timer since this one rendered. That is a recoverable state, not an error,
-  // so send them back to the page where the running timer is visible.
-  if (running) redirect("/goals?busy=1");
-
-  await db.insert(goalSessions).values({
-    goalId,
-    startedAt: new Date(),
-    source: "timer",
-  });
+  const result = await timer.startTimer(readId(formData, "goalId"));
+  // Something else started a timer since this page rendered. Send them back to
+  // where the running timer is visible rather than erroring.
+  if (result.state === "busy") redirect("/goals?busy=1");
 
   redirect("/goals");
 }
 
 export async function stopTimer() {
   await requireOwner();
-
-  const [running] = await db
-    .select()
-    .from(goalSessions)
-    .where(isNull(goalSessions.endedAt))
-    .orderBy(desc(goalSessions.startedAt))
-    .limit(1);
-
-  if (running) {
-    const endedAt = new Date();
-    // The elapsed time is measured server-side from the stored start, so a
-    // wrong clock in the browser can never write a wrong duration.
-    const durationSeconds = Math.max(
-      1,
-      Math.round((endedAt.getTime() - running.startedAt.getTime()) / 1000)
-    );
-    await db
-      .update(goalSessions)
-      .set({ endedAt, durationSeconds, updatedAt: endedAt })
-      .where(eq(goalSessions.id, running.id));
-  }
-
+  await timer.stopTimer();
   redirect("/goals");
 }
 
 export async function discardTimer() {
   await requireOwner();
-  await db.delete(goalSessions).where(isNull(goalSessions.endedAt));
+  await timer.discardTimer();
   redirect("/goals");
 }
 
