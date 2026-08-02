@@ -6,6 +6,8 @@ import {
 } from "@/lib/goal-progress";
 import { getGoalById } from "@/lib/goals";
 import {
+  findGoalByName,
+  getActiveGoals,
   getFeaturedGoalRow,
   getRunning,
   startTimer,
@@ -42,7 +44,28 @@ export async function POST(request: Request) {
     );
   }
 
-  const goalId = typeof body.goalId === "number" ? body.goalId : undefined;
+  // `goal` is a name, which is what the per-goal Home Screen buttons send.
+  // `goalId` still works for anything that already knows the id.
+  let goalId = typeof body.goalId === "number" ? body.goalId : undefined;
+  if (typeof body.goal === "string" && body.goal.trim()) {
+    const lookup = await findGoalByName(body.goal);
+    if (!lookup.found) {
+      const names = (await getActiveGoals()).map((g) => g.name);
+      return Response.json(
+        {
+          ok: false,
+          state: "no-goal",
+          message:
+            lookup.reason === "ambiguous"
+              ? `More than one goal is named "${body.goal}". Rename one at /goals.`
+              : `No goal named "${body.goal}". Try: ${names.join(", ")}.`,
+          goals: names,
+        },
+        { status: 404 }
+      );
+    }
+    goalId = lookup.found.id;
+  }
 
   let result: TimerResult;
   if (action === "stop") {
@@ -114,6 +137,18 @@ async function describe(result: TimerResult) {
         }. ${await progressLine(result.goal.id)}`,
       };
 
+    case "switched":
+      return {
+        ok: true,
+        state: "switched",
+        goal: result.goal.name,
+        stoppedGoal: result.stoppedGoal.name,
+        loggedSeconds: result.loggedSeconds,
+        message: `Logged ${formatDuration(result.loggedSeconds)} to ${
+          result.stoppedGoal.name
+        }, started ${result.goal.name}`,
+      };
+
     case "busy":
       return {
         ok: false,
@@ -158,7 +193,7 @@ async function progressLine(goalId: number): Promise<string> {
 
 async function readJsonBody(
   request: Request
-): Promise<{ action?: string; goalId?: number }> {
+): Promise<{ action?: string; goalId?: number; goal?: string }> {
   // An empty body is the common case: the Shortcut's simplest form is a bare
   // POST, which should just toggle.
   try {
