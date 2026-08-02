@@ -45,7 +45,7 @@ export default async function Image() {
             marginTop: 24,
           }}
         >
-          Senior Software Engineer
+          Software Engineer
         </div>
       </div>
     ),

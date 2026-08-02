@@ -29,7 +29,7 @@ export default async function GuestbookPage({
 
         {submitted && (
           <div className="sm-guestbook-notice">
-            Thanks — your note is in for review and will show up here once
+            Thanks - your note is in for review and will show up here once
             approved.
           </div>
         )}
@@ -60,12 +60,12 @@ export default async function GuestbookPage({
           <div className="sm-section-label">ENTRIES</div>
           <div className="sm-section-content">
             {entries.length === 0 ? (
-              <p>no entries yet &mdash; be the first!</p>
+              <p>no entries yet - be the first!</p>
             ) : (
               entries.map((entry) => (
                 <div key={entry.id} className="sm-guestbook-entry">
                   <p>{entry.message}</p>
-                  <span>&mdash; {entry.name}</span>
+                  <span>- {entry.name}</span>
                 </div>
               ))
             )}

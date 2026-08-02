@@ -18,7 +18,7 @@ export default function NewPostPage() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="slug">Slug (optional — derived from title if left blank)</label>
+          <label htmlFor="slug">Slug (optional - derived from title if left blank)</label>
           <input type="text" id="slug" name="slug" />
         </div>
 

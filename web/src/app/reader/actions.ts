@@ -86,7 +86,7 @@ export async function extractArticle(
       console.error("HN gate check failed:", err);
       return {
         status: "error",
-        message: "Couldn't verify that link right now — try again in a moment.",
+        message: "Couldn't verify that link right now - try again in a moment.",
       };
     }
 
@@ -137,7 +137,7 @@ export async function extractArticle(
       return {
         status: "error",
         message:
-          "Couldn't find article text on that page — it might be paywalled or need JavaScript to load.",
+          "Couldn't find article text on that page - it might be paywalled or need JavaScript to load.",
       };
     }
 
@@ -163,7 +163,7 @@ export async function extractArticle(
       console.error("Moderation check failed:", err);
       return {
         status: "error",
-        message: "Couldn't verify that content — try again in a moment.",
+        message: "Couldn't verify that content - try again in a moment.",
       };
     }
 

@@ -25,7 +25,7 @@ export default async function AdminGuestbookPage() {
                 <div className={styles.entryMessage}>
                   <div>{entry.message}</div>
                   <div style={{ color: "#999", fontSize: 12 }}>
-                    &mdash; {entry.name}
+                    - {entry.name}
                   </div>
                 </div>
                 {!entry.approved && (

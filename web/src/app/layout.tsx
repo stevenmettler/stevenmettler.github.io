@@ -12,6 +12,8 @@ const fragmentMono = Fragment_Mono({
 
 export const metadata: Metadata = {
   title: "Steven Mettler",
+  description:
+    "Software engineer. I build small tools for an audience of one - a text-only reader, an hours tracker, a couple of tiny games - and write about them here.",
 };
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem("sm-theme");if(t!=="light"&&t!=="dark")t="light";document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;

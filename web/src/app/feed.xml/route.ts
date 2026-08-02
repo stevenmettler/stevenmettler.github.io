@@ -30,7 +30,7 @@ export async function GET() {
   <channel>
     <title>steven mettler</title>
     <link>${SITE_URL}</link>
-    <description>Steven Mettler's blog</description>
+    <description>Posts from Steven Mettler about the small things he builds.</description>
     <language>en-us</language>
     <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />${items}
   </channel>

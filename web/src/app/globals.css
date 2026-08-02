@@ -156,6 +156,24 @@ a:hover {
   color: var(--body);
 }
 
+/* Own line: a hyphen is a break opportunity, so an inline attribution can
+   strand the dash at the end of a line. */
+.sm-quote-attr {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.sm-about-content p {
+  margin: 0 0 18px;
+  max-width: 58ch;
+  text-wrap: pretty;
+}
+
+.sm-about-content p:last-child {
+  margin-bottom: 0;
+}
+
 .sm-goal-row {
   display: flex;
   justify-content: space-between;

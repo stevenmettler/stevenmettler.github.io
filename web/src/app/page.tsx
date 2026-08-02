@@ -53,10 +53,13 @@ export default async function Home() {
 
         <header className="sm-hero">
           <h1>Steven&nbsp;Mettler</h1>
-          <p className="sm-subtitle">Senior&nbsp;Software&nbsp;Engineer</p>
+          <p className="sm-subtitle">Software&nbsp;Engineer</p>
           <p className="sm-quote">
             &ldquo;The reward of a work is to have produced it; the reward of
-            effort is to have grown by it.&rdquo;&nbsp;&nbsp;&mdash;&nbsp;Antonin&nbsp;Sertillanges
+            effort is to have grown by it.&rdquo;
+            <span className="sm-quote-attr">
+              - Antonin&nbsp;Sertillanges
+            </span>
           </p>
         </header>
 
@@ -66,9 +69,20 @@ export default async function Home() {
             <br />
             ABOUT
           </div>
-          <div className="sm-section-content">
-            Building at Capital One. Pursuing a Master&rsquo;s in CS at
-            Georgia&nbsp;Tech. Penn&nbsp;State alum.
+          <div className="sm-section-content sm-about-content">
+            <p>
+              Software engineer at Capital&nbsp;One, finishing a
+              Master&rsquo;s in CS at Georgia&nbsp;Tech.
+            </p>
+            <p>
+              Mostly I build small things for an audience of one: a reader that
+              strips articles down to text, a tracker for the hours I want to
+              spend on something, a couple of tiny games.
+            </p>
+            <p>
+              Most of them exist because I wanted them and no one else was
+              going to.
+            </p>
           </div>
         </section>
 
@@ -111,11 +125,8 @@ export default async function Home() {
           </div>
           <div className="sm-section-content">
             <div className="sm-work-row">
-              <span>
-                SWE&nbsp;@&nbsp;Capital&nbsp;One &mdash; crafting scalable
-                things
-              </span>
-              <span className="sm-work-years">2022&mdash;</span>
+              <span>Capital&nbsp;One</span>
+              <span className="sm-work-years">2022-</span>
             </div>
             <div className="sm-work-code">
               code: <a href="https://github.com/stevenmettler">github</a>
@@ -149,10 +160,10 @@ export default async function Home() {
             GAMES
           </div>
           <div className="sm-section-content sm-games-content">
-            <Link href="/games/freefall">freefall</Link> &mdash; a small
+            <Link href="/games/freefall">freefall</Link> - a small
             game about dodging obstacles
             <br />
-            <Link href="/games/catacombs">catacombs</Link> &mdash; a tiny
+            <Link href="/games/catacombs">catacombs</Link> - a tiny
             roguelike dungeon crawl
           </div>
         </section>

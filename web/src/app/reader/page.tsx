@@ -87,7 +87,7 @@ function ReaderForm() {
     <div className={styles.page}>
       <h1>reader</h1>
       <p className={styles.hint}>
-        Paste an article link to get back the text only — no images, no video.
+        Paste an article link to get back the text only - no images, no video.
       </p>
 
       <form ref={formRef} action={formAction} className={styles.form}>
