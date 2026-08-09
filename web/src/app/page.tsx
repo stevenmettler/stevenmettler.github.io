@@ -44,7 +44,7 @@ export default async function Home() {
             <a href="/feed.xml" className="sm-nav-resume">
               rss
             </a>
-            <a href="/MettlerResume2025.pdf" className="sm-nav-resume">
+            <a href="/MettlerResume2026.pdf" className="sm-nav-resume">
               resume
             </a>
             <ThemeToggle />
@@ -181,7 +181,7 @@ export default async function Home() {
             >
               steven.e.mettler@gmail.com
             </a>
-            <a href="/MettlerResume2025.pdf" className="sm-contact-resume">
+            <a href="/MettlerResume2026.pdf" className="sm-contact-resume">
               resume (.pdf) &darr;
             </a>
           </div>
