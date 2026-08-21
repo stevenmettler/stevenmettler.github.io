@@ -2335,7 +2335,8 @@
     else if (btn.dataset.ability === 'dash') useDash();
   });
 
-  gameOverEl.addEventListener('click', function () {
+  gameOverEl.addEventListener('click', function (e) {
+    if (e.target.closest('[data-action="signin"]')) { signInTop(); return; }
     newGame();
   });
 
@@ -2387,11 +2388,6 @@
     }
     if (e.target === metaEl) closeHub();
   });
-
-  // Sign-in prompt shown on the game-over screen.
-  gameOverEl.addEventListener('click', function (e) {
-    if (e.target.closest('[data-action="signin"]')) { e.stopPropagation(); signInTop(); }
-  }, true);
 
   function resizeCanvas() {
     canvas.width = window.innerWidth;
