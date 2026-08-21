@@ -52,7 +52,15 @@ jobs:
           # Model is pinned so this doesn't silently change when defaults shift.
           # Raised from 8 -> 15 after issue #2's first run hit the ceiling mid-task
           # (read issue, locate code, edit, lint, build, commit, push, open PR left no room for error).
+          #
+          # allowedTools is additive to the action's default tag-mode tools (Read/Grep/Glob/LS,
+          # git add/commit/push). Without an explicit Edit grant and scoped npm commands, the agent
+          # cannot make or verify any code change at all - issue #2's second run burned its whole
+          # turn budget on permission denials before it ever touched a file.
+          # npm run lint/build are scoped with exact command matches (not `npm run *`) so this can
+          # never reach `npm run db:migrate`/`db:generate`, which stay off-limits per web/CLAUDE.md.
           claude_args: |
             --max-turns 15
             --model claude-sonnet-5
+            --allowedTools "Edit,Bash(cd:*),Bash(npm run lint:*),Bash(npm run build:*)"
 
