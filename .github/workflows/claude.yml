@@ -50,19 +50,20 @@ jobs:
 
           # Guardrails: cap turns to keep runs bounded/cheap, raise only if legitimately truncated.
           # Model is pinned so this doesn't silently change when defaults shift.
-          # Raised 8 -> 15 -> 20 while calibrating on issue #2: 15 got a correct fix implemented,
-          # committed, and pushed, but ran out of turns before lint/build/PR (3 permission denials
-          # of unknown cause also ate turns - GitHub Actions logs don't retain the per-tool-call
-          # denial detail, only the count, so this is a budget bump rather than a targeted fix).
+          # Raised 8 -> 15 -> 20 -> 25 while calibrating on issue #2: the run 20 caps implemented,
+          # committed, and pushed a correct fix, but self-reported success one turn over budget (21)
+          # and never got to verify with lint/build, because npm install wasn't allowed and the
+          # checkout has no node_modules. Added the grant below and gave more headroom for it.
           #
           # allowedTools is additive to the action's default tag-mode tools (Read/Grep/Glob/LS,
           # git add/commit/push). Without an explicit Edit grant and scoped npm commands, the agent
           # cannot make or verify any code change at all - issue #2's second run burned its whole
           # turn budget on permission denials before it ever touched a file.
-          # npm run lint/build are scoped with exact command matches (not `npm run *`) so this can
-          # never reach `npm run db:migrate`/`db:generate`, which stay off-limits per web/CLAUDE.md.
+          # npm run lint/build/install are scoped with exact command matches (not `npm run *`/`npm *`)
+          # so this can never reach `npm run db:migrate`/`db:generate`, which stay off-limits per
+          # web/CLAUDE.md. `npm install` only installs from the committed package-lock.json.
           claude_args: |
-            --max-turns 20
+            --max-turns 25
             --model claude-sonnet-5
-            --allowedTools "Edit,Bash(cd:*),Bash(npm run lint:*),Bash(npm run build:*)"
+            --allowedTools "Edit,Bash(cd:*),Bash(npm install:*),Bash(npm run lint:*),Bash(npm run build:*)"
 
